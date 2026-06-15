@@ -1,0 +1,24 @@
+# Maven
+target/
+*.jar
+*.war
+*.ear
+*.class
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# OS/System
+.DS_Store
+Thumbs.db
+
+# Project specifics
+.env
+.env.local

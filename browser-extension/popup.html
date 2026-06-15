@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>DataSync YT Downloader</title>
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      width: 250px;
+      padding: 16px;
+      margin: 0;
+      background-color: #1a1a1a;
+      color: #ffffff;
+    }
+    h2 {
+      font-size: 16px;
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-weight: 600;
+      color: #e0e0e0;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: none;
+      border-radius: 8px;
+      background-color: #4CAF50;
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    button:active {
+      transform: scale(0.98);
+    }
+    button.playlist {
+      background-color: #2196F3;
+    }
+    button.playlist:hover {
+      background-color: #1e88e5;
+    }
+    button:disabled {
+      background-color: #555555;
+      color: #888888;
+      cursor: not-allowed;
+    }
+    #status {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #ff9800;
+      text-align: center;
+      min-height: 20px;
+    }
+    .success { color: #4CAF50 !important; }
+    .error { color: #f44336 !important; }
+  </style>
+</head>
+<body>
+  <h2>DataSync YT Downloader</h2>
+  <button id="btn-video">Download audio</button>
+  <button id="btn-playlist" class="playlist">Download playlist/mix</button>
+  <div id="status"></div>
+  <script src="popup.js"></script>
+</body>
+</html>

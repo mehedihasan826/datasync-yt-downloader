@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataSync YT Downloader</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="glass-container main-card">
+        <h1>DataSync <span>Downloader</span></h1>
+        <p class="subtitle">Download and import music seamlessly to your local library.</p>
+        
+        <div class="input-group">
+            <input type="text" id="url-input" placeholder="Paste YouTube Video or Playlist URL here...">
+            <div class="actions">
+                <button id="btn-video" class="btn primary">Download Video</button>
+                <button id="btn-playlist" class="btn secondary">Download Playlist / Mix</button>
+            </div>
+        </div>
+        
+        <div id="error-msg" class="error-msg hidden"></div>
+        
+        <h2>Recent Jobs</h2>
+        <div id="jobs-container" class="jobs-container">
+            <!-- Jobs injected via JS -->
+            <div class="loading-pulse">Loading jobs...</div>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>

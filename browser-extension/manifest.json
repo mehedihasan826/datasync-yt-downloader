@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "DataSync YT Downloader",
+  "version": "1.0",
+  "description": "Send YouTube videos and playlists to local DataSync downloader.",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "http://localhost:8765/*",
+    "https://*.youtube.com/*"
+  ]
+}
