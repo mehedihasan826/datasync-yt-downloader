@@ -3,11 +3,9 @@ package com.datasync.ytdownloader.queue;
 import com.datasync.ytdownloader.api.JobStatusResponse;
 import com.datasync.ytdownloader.download.DownloadResult;
 import com.datasync.ytdownloader.download.YtDlpService;
-import com.datasync.ytdownloader.bot.TelegramBotService;
 import com.datasync.ytdownloader.file.MusicImportService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -24,15 +22,33 @@ public class DownloadQueueService {
 
     private final YtDlpService ytDlpService;
     private final MusicImportService musicImportService;
-    private final TelegramBotService telegramBotService;
 
     private final Map<String, DownloadJob> jobs = new ConcurrentHashMap<>();
     private final ExecutorService executor = Executors.newFixedThreadPool(2); // Process 2 jobs at a time
+    
+    private final List<JobProgressListener> listeners = new java.util.concurrent.CopyOnWriteArrayList<>();
 
-    public DownloadQueueService(YtDlpService ytDlpService, MusicImportService musicImportService, @Lazy TelegramBotService telegramBotService) {
+    public DownloadQueueService(YtDlpService ytDlpService, MusicImportService musicImportService) {
         this.ytDlpService = ytDlpService;
         this.musicImportService = musicImportService;
-        this.telegramBotService = telegramBotService;
+    }
+    
+    public void addListener(JobProgressListener listener) {
+        listeners.add(listener);
+    }
+    
+    public DownloadJob getJob(String jobId) {
+        return jobs.get(jobId);
+    }
+    
+    public void notifyProgress(DownloadJob job) {
+        for (JobProgressListener listener : listeners) {
+            try {
+                listener.onProgressUpdate(job);
+            } catch (Exception e) {
+                log.error("Error notifying listener", e);
+            }
+        }
     }
 
     public String queueJob(String url, boolean playlist, String source) {
@@ -84,13 +100,13 @@ public class DownloadQueueService {
             job.setPhase(status);
         }
         log.info("Job {} [{}]: {}", job.getId(), status, message);
-        telegramBotService.notifyStatus(job.getSource(), "Status [" + status + "]: " + message);
+        notifyProgress(job);
     }
 
     private void processJob(DownloadJob job) {
         try {
             updateStatus(job, DownloadJobStatus.DOWNLOADING, "Downloading with yt-dlp...");
-            List<DownloadResult> downloadedFiles = ytDlpService.download(job);
+            List<DownloadResult> downloadedFiles = ytDlpService.download(job, () -> notifyProgress(job));
             
             if (downloadedFiles.isEmpty()) {
                 updateStatus(job, DownloadJobStatus.COMPLETED, "No new files were downloaded (possibly all duplicates skipped).");

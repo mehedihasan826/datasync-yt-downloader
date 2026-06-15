@@ -27,6 +27,8 @@ public class AppProperties {
     private String telegramBotToken;
     private String telegramBotUsername;
     private String telegramAllowedUserIds;
+    private boolean telegramPollingEnabled = true;
+    private String telegramStatusUpdateMode = "edit_message";
 
     private int maxPlaylistItems = 50;
     private String importMode = "SHARED_DRIVE_AND_MASTER_IMPORT";
@@ -90,6 +92,12 @@ public class AppProperties {
 
     public String getTelegramAllowedUserIds() { return telegramAllowedUserIds; }
     public void setTelegramAllowedUserIds(String telegramAllowedUserIds) { this.telegramAllowedUserIds = telegramAllowedUserIds; }
+
+    public boolean isTelegramPollingEnabled() { return telegramPollingEnabled; }
+    public void setTelegramPollingEnabled(boolean telegramPollingEnabled) { this.telegramPollingEnabled = telegramPollingEnabled; }
+
+    public String getTelegramStatusUpdateMode() { return telegramStatusUpdateMode; }
+    public void setTelegramStatusUpdateMode(String telegramStatusUpdateMode) { this.telegramStatusUpdateMode = telegramStatusUpdateMode; }
 
     public int getMaxPlaylistItems() { return maxPlaylistItems; }
     public void setMaxPlaylistItems(int maxPlaylistItems) { this.maxPlaylistItems = maxPlaylistItems; }

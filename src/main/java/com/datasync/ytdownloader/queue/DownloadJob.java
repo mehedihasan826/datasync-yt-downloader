@@ -13,6 +13,11 @@ public class DownloadJob {
     private DownloadJobStatus phase;
     private String message;
     
+    private String telegramChatId;
+    private String telegramUserId;
+    private Integer telegramMessageId;
+    private Integer telegramStatusMessageId;
+    
     private Integer playlistIndex;
     private Integer playlistTotal;
     private String currentTitle;
@@ -95,4 +100,16 @@ public class DownloadJob {
 
     public synchronized String getProviderName() { return providerName; }
     public synchronized void setProviderName(String providerName) { this.providerName = providerName; touch(); }
+
+    public synchronized String getTelegramChatId() { return telegramChatId; }
+    public synchronized void setTelegramChatId(String telegramChatId) { this.telegramChatId = telegramChatId; }
+
+    public synchronized String getTelegramUserId() { return telegramUserId; }
+    public synchronized void setTelegramUserId(String telegramUserId) { this.telegramUserId = telegramUserId; }
+
+    public synchronized Integer getTelegramMessageId() { return telegramMessageId; }
+    public synchronized void setTelegramMessageId(Integer telegramMessageId) { this.telegramMessageId = telegramMessageId; }
+
+    public synchronized Integer getTelegramStatusMessageId() { return telegramStatusMessageId; }
+    public synchronized void setTelegramStatusMessageId(Integer telegramStatusMessageId) { this.telegramStatusMessageId = telegramStatusMessageId; }
 }
