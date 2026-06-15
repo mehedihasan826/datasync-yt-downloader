@@ -1,4 +1,10 @@
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
+  // Force a repaint to fix Mac Chrome rendering bug where popup doesn't appear until tab change
+  setTimeout(() => {
+    document.body.style.opacity = '0.99';
+    setTimeout(() => { document.body.style.opacity = '1'; }, 10);
+  }, 10);
+
   const btnVideo = document.getElementById('btn-video');
   const btnPlaylist = document.getElementById('btn-playlist');
   const btnOpenApp = document.getElementById('btn-open-app');
@@ -16,31 +22,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     chrome.tabs.create({ url: 'http://localhost:8765' });
   });
 
-  let currentUrl = '';
-  try {
-    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab && tab.url) {
-      currentUrl = tab.url;
-    }
-  } catch(e) {}
-
-  if (currentUrl.includes('watch?v=') || currentUrl.includes('music.youtube.com/watch')) {
-    if (currentUrl.includes('list=') || currentUrl.includes('start_radio=1')) {
-      pageTypeDiv.textContent = 'Playlist/Mix detected';
+  // Check backend health
+  const healthDiv = document.getElementById('health-status');
+  chrome.runtime.sendMessage({ type: 'DATASYNC_HEALTH' }, (response) => {
+    if (chrome.runtime.lastError || !response || !response.success) {
+      healthDiv.textContent = '🔴 Backend Offline (Start DataSync app)';
+      healthDiv.style.color = '#ef4444';
     } else {
-      pageTypeDiv.textContent = 'YouTube video detected';
+      healthDiv.textContent = '🟢 Backend Online';
+      healthDiv.style.color = '#10b981';
     }
-    pageTypeDiv.classList.add('detected');
-  } else if (currentUrl.includes('/playlist?list=')) {
-    pageTypeDiv.textContent = 'Playlist detected';
-    pageTypeDiv.classList.add('detected');
-  } else {
-    pageTypeDiv.textContent = 'Not a YouTube page';
-    pageTypeDiv.classList.remove('detected');
-    btnVideo.disabled = true;
-    btnPlaylist.disabled = true;
-    setStatus('Open YouTube video or playlist first.', true);
-  }
+  });
+
+  let currentUrl = '';
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs && tabs[0] && tabs[0].url) {
+      currentUrl = tabs[0].url;
+    }
+
+    if (currentUrl.includes('watch?v=') || currentUrl.includes('music.youtube.com/watch')) {
+      if (currentUrl.includes('list=') || currentUrl.includes('start_radio=1')) {
+        pageTypeDiv.textContent = 'Playlist/Mix detected';
+      } else {
+        pageTypeDiv.textContent = 'YouTube video detected';
+      }
+      pageTypeDiv.classList.add('detected');
+    } else if (currentUrl.includes('/playlist?list=')) {
+      pageTypeDiv.textContent = 'Playlist detected';
+      pageTypeDiv.classList.add('detected');
+    } else {
+      pageTypeDiv.textContent = 'Not a YouTube page';
+      pageTypeDiv.classList.remove('detected');
+      btnVideo.disabled = true;
+      btnPlaylist.disabled = true;
+      setStatus('Open YouTube video or playlist first.', true);
+    }
+  });
 
   function sendDownloadRequest(isPlaylist) {
     if (!currentUrl) return;
