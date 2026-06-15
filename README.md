@@ -72,12 +72,30 @@ The custom browser extension is the primary way to interact with the downloader.
 - **Popup Interface:** If you prefer, you can click the extension icon in your browser toolbar to open a clean, dark-themed popup. It intelligently detects your current page (identifying if it's a single video or a playlist) and allows you to easily jump to the Local Web App console.
 - **Global CORS Routing:** The extension safely routes all network requests to your local backend (`localhost:8765`) via a background Service Worker, completely bypassing normal browser cross-origin constraints.
 
-## Telegram Setup and Limitation
+## Telegram Setup and Limitations
 
-If `TELEGRAM_ENABLED=true` is set in your `.env`, you can queue downloads by sending YouTube links directly to your Telegram bot. You must specify your Telegram User ID in `TELEGRAM_ALLOWED_USER_IDS` to restrict access.
+You can securely queue downloads from your phone by sending YouTube links directly to a local Telegram bot running inside the DataSync application. 
 
-**Important Limitation:**
-The Telegram bot runs locally on your machine alongside the app. **If all your computers are off, this local Telegram bot cannot receive or process messages.** There is no VPS, server, or offline cloud bot implemented.
+**Setup Steps:**
+1. Open Telegram.
+2. Search for `BotFather`.
+3. Send `/newbot`.
+4. Choose a bot name and username.
+5. Copy the provided Bot Token.
+6. Get your own Telegram User ID (you can use a bot like `@userinfobot`).
+7. Update your `.env` file:
+   ```env
+   TELEGRAM_ENABLED=true
+   TELEGRAM_BOT_TOKEN=your_token
+   TELEGRAM_ALLOWED_USER_IDS=your_user_id
+   ```
+8. Restart the DataSync app.
+9. Send a YouTube link to your bot, or use `/start` for help.
+
+**Important Explanations & Limitations:**
+- **Local Only:** No external server or VPS is used. The bot strictly runs inside your local app instance.
+- **Offline Queuing:** If your computers are turned off, the Telegram bot cannot process messages immediately. However, if you send a message while the app is off, the message will be processed later when you turn the app back on (if Telegram still has the pending updates).
+- **Clean Notifications:** Status is updated by editing the *same* bot message in place. The app intentionally does *not* send repeated notification spam for each progress step.
 
 ## iPhone Sync
 

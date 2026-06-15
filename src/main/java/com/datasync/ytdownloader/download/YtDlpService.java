@@ -37,7 +37,7 @@ public class YtDlpService {
         this.objectMapper = objectMapper;
     }
 
-    public List<DownloadResult> download(DownloadJob job) throws Exception {
+    public List<DownloadResult> download(DownloadJob job, Runnable progressCallback) throws Exception {
         File jobDir = new File(properties.getWorkDir(), "jobs/" + job.getId());
         if (!jobDir.exists() && !jobDir.mkdirs()) {
             throw new RuntimeException("Failed to create job directory: " + jobDir.getAbsolutePath());
@@ -94,7 +94,12 @@ public class YtDlpService {
 
         log.info("Running yt-dlp: {}", String.join(" ", command));
 
-        CommandRunner.CommandResult result = commandRunner.runCommandAndWaitWithOutput(line -> parseOutputLine(job, line), command.toArray(new String[0]));
+        CommandRunner.CommandResult result = commandRunner.runCommandAndWaitWithOutput(line -> {
+            parseOutputLine(job, line);
+            if (progressCallback != null) {
+                progressCallback.run();
+            }
+        }, command.toArray(new String[0]));
         if (result.exitCode != 0) {
             throw new RuntimeException("yt-dlp exited with code " + result.exitCode + "\nLogs:\n" + result.output);
         }

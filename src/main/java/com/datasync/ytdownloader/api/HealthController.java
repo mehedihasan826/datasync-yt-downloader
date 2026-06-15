@@ -54,6 +54,11 @@ public class HealthController {
         }
         response.put("sharedArchiveEnabled", sharedEnabled);
 
+        response.put("telegramEnabled", properties.isTelegramEnabled());
+        response.put("telegramPollingEnabled", properties.isTelegramPollingEnabled());
+        response.put("telegramConfigured", properties.getTelegramBotToken() != null && !properties.getTelegramBotToken().isBlank());
+        response.put("telegramAllowedUsersConfigured", properties.getTelegramAllowedUserIds() != null && !properties.getTelegramAllowedUserIds().isBlank());
+
         return response;
     }
 
