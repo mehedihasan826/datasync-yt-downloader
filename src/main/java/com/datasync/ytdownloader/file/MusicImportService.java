@@ -1,6 +1,8 @@
 package com.datasync.ytdownloader.file;
 
 import com.datasync.ytdownloader.config.AppProperties;
+import com.datasync.ytdownloader.queue.DownloadJob;
+import com.datasync.ytdownloader.queue.DownloadJobStatus;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,25 +25,73 @@ public class MusicImportService {
         this.sanitizer = sanitizer;
     }
 
-    public File importFile(File sourceFile) throws Exception {
+    public File importFile(File sourceFile, DownloadJob job) throws Exception {
         String originalName = sourceFile.getName();
-        String baseName = originalName.endsWith(".m4a") ? originalName.substring(0, originalName.length() - 4) : originalName;
 
-        File importDir = new File(properties.getMusicImportDir());
-        if (!importDir.exists()) {
-            importDir.mkdirs();
+        File readyDir = new File(properties.getSharedReadyDir() != null ? properties.getSharedReadyDir() : "");
+        File targetDir;
+
+        boolean gDriveExists = readyDir.exists() && readyDir.isDirectory();
+        if (gDriveExists) {
+            targetDir = readyDir;
+        } else {
+            log.warn("Google Drive not detected. Saving to local-output fallback.");
+            targetDir = new File(properties.getWorkDir(), "local-output");
+            if (!targetDir.exists()) {
+                targetDir.mkdirs();
+            }
         }
 
-        File targetFile = new File(importDir, originalName);
+        if (job != null) job.setPhase(DownloadJobStatus.COPYING_TO_DRIVE);
+        
+        File targetReadyFile = getUniqueFile(targetDir, originalName);
+        log.info("Copying file to {}", targetReadyFile.getAbsolutePath());
+        Files.copy(sourceFile.toPath(), targetReadyFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        
+        if (job != null) job.incrementDownloadedFileCount();
+
+        if (properties.isMasterMusicMachine() && gDriveExists) {
+            String appleDirStr = properties.getAppleMusicImportDir();
+            if (appleDirStr != null && !appleDirStr.isBlank()) {
+                File appleDir = new File(appleDirStr);
+                if (appleDir.exists()) {
+                    if (job != null) job.setPhase(DownloadJobStatus.IMPORTING_TO_APPLE_MUSIC);
+                    
+                    File targetAppleFile = getUniqueFile(appleDir, originalName);
+                    log.info("Master machine: Copying to Apple Music import dir {}", targetAppleFile.getAbsolutePath());
+                    Files.copy(targetReadyFile.toPath(), targetAppleFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+                    if (!targetAppleFile.exists() || targetAppleFile.length() == 0) {
+                        throw new Exception("File copy to Apple Music failed or size is 0");
+                    }
+
+                    File importedDir = new File(properties.getSharedImportedDir());
+                    if (!importedDir.exists()) {
+                        importedDir.mkdirs();
+                    }
+
+                    File targetImportedFile = getUniqueFile(importedDir, originalName);
+                    log.info("Master machine: Moving from Ready to Imported dir {}", targetImportedFile.getAbsolutePath());
+                    Files.move(targetReadyFile.toPath(), targetImportedFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    
+                    if (job != null) job.incrementImportedFileCount();
+                } else {
+                    log.warn("Apple Music import dir does not exist. Leaving in Ready dir.");
+                }
+            }
+        }
+
+        return targetReadyFile;
+    }
+
+    private File getUniqueFile(File dir, String originalName) {
+        String baseName = originalName.endsWith(".m4a") ? originalName.substring(0, originalName.length() - 4) : originalName;
+        File targetFile = new File(dir, originalName);
         int counter = 1;
         while (targetFile.exists()) {
-            targetFile = new File(importDir, baseName + " (" + counter + ").m4a");
+            targetFile = new File(dir, baseName + " (" + counter + ").m4a");
             counter++;
         }
-
-        log.info("Moving file to {}", targetFile.getAbsolutePath());
-        Files.move(sourceFile.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-
         return targetFile;
     }
 }

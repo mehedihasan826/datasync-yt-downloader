@@ -11,20 +11,49 @@
     <div class="glass-container main-card">
         <h1>DataSync <span>Downloader</span></h1>
         <p class="subtitle">Download and import music seamlessly to your local library.</p>
-        
+
+        <div id="system-status" class="system-status hidden">
+            <div class="status-item"><span class="label">Machine:</span> <span id="stat-machine" class="value">-</span></div>
+            <div class="status-item"><span class="label">Master:</span> <span id="stat-master" class="value">-</span></div>
+            <div class="status-item"><span class="label">GDrive:</span> <span id="stat-gdrive" class="value">-</span></div>
+        </div>
+        <div id="archive-status" class="system-status hidden" style="flex-direction: column; gap: 4px; margin-top: -1rem;">
+            <div class="status-item" style="font-size: 0.8rem;"><span class="label">Shared archive:</span> <span id="stat-archive-enabled" class="value">-</span></div>
+            <div id="archive-warning" class="hidden" style="color: var(--warning); font-size: 0.8rem; margin-top: 4px;">Duplicate prevention is local only because shared archive is not configured.</div>
+        </div>
+
+        <div id="file-stats" class="file-stats hidden">
+            <div class="stat-card">
+                <div class="stat-num" id="count-ready">0</div>
+                <div class="stat-label">Ready</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" id="count-imported">0</div>
+                <div class="stat-label">Imported</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num error-text" id="count-failed">0</div>
+                <div class="stat-label">Failed</div>
+            </div>
+        </div>
+
         <div class="input-group">
             <input type="text" id="url-input" placeholder="Paste YouTube Video or Playlist URL here...">
             <div class="actions">
-                <button id="btn-video" class="btn primary">Download Video</button>
+                <button id="btn-video" class="btn primary">Download Audio</button>
                 <button id="btn-playlist" class="btn secondary">Download Playlist / Mix</button>
             </div>
         </div>
         
         <div id="error-msg" class="error-msg hidden"></div>
         
+        <div class="cleanup-section">
+            <button id="btn-cleanup" class="btn outline">Delete Imported backups older than retention days</button>
+            <p class="warning-text">Warning: Cleanup never deletes Apple Music files.</p>
+        </div>
+
         <h2>Recent Jobs</h2>
         <div id="jobs-container" class="jobs-container">
-            <!-- Jobs injected via JS -->
             <div class="loading-pulse">Loading jobs...</div>
         </div>
     </div>

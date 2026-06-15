@@ -1,58 +1,83 @@
 package com.datasync.ytdownloader.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 
+@Component
 @ConfigurationProperties(prefix = "")
 public class AppProperties {
     
+    private String machineName = "mac-main";
+    private boolean isMasterMusicMachine = false;
     private String workDir;
-    private String musicImportDir;
-    private int maxPlaylistItems = 50;
-    private boolean duplicateSkip = true;
-    private ImportMode importMode = ImportMode.READY_FOLDER;
     
-    private String ytdlpBinary = "yt-dlp";
-    private String ffmpegBinary = "ffmpeg";
-    private String ffprobeBinary = "ffprobe";
+    private String googleDriveRoot;
+    private String sharedReadyDir;
+    private String sharedImportedDir;
+    private String sharedFailedDir;
+    private String sharedQueueDir;
+    
+    private String appleMusicImportDir;
+    
+    private int masterScanIntervalSeconds = 60;
+    private int cleanupRetentionDays = 30;
+    private String cleanupMode = "manual";
     
     private boolean telegramEnabled = false;
     private String telegramBotToken;
     private String telegramBotUsername;
     private String telegramAllowedUserIds;
 
+    private int maxPlaylistItems = 50;
+    private String importMode = "SHARED_DRIVE_AND_MASTER_IMPORT";
+
+    private String ytdlpBinary = "yt-dlp";
+    private String ffmpegBinary = "ffmpeg";
     private boolean ytdlpEmbedMetadata = true;
     private boolean ytdlpEmbedThumbnail = true;
     private boolean keepInfoJson = true;
-
-    public enum ImportMode {
-        AUTO_FOLDER, READY_FOLDER
-    }
+    private String ytDlpArchiveFile;
 
     // Getters and Setters
+
+    public String getMachineName() { return machineName; }
+    public void setMachineName(String machineName) { this.machineName = machineName; }
+
+    public boolean isMasterMusicMachine() { return isMasterMusicMachine; }
+    public void setIsMasterMusicMachine(boolean masterMusicMachine) { this.isMasterMusicMachine = masterMusicMachine; }
+    // Add alias for Spring binding if needed
+    public boolean getIsMasterMusicMachine() { return isMasterMusicMachine; }
+    public void setMasterMusicMachine(boolean masterMusicMachine) { this.isMasterMusicMachine = masterMusicMachine; }
 
     public String getWorkDir() { return workDir; }
     public void setWorkDir(String workDir) { this.workDir = workDir; }
 
-    public String getMusicImportDir() { return musicImportDir; }
-    public void setMusicImportDir(String musicImportDir) { this.musicImportDir = musicImportDir; }
+    public String getGoogleDriveRoot() { return googleDriveRoot; }
+    public void setGoogleDriveRoot(String googleDriveRoot) { this.googleDriveRoot = googleDriveRoot; }
 
-    public int getMaxPlaylistItems() { return maxPlaylistItems; }
-    public void setMaxPlaylistItems(int maxPlaylistItems) { this.maxPlaylistItems = maxPlaylistItems; }
+    public String getSharedReadyDir() { return sharedReadyDir; }
+    public void setSharedReadyDir(String sharedReadyDir) { this.sharedReadyDir = sharedReadyDir; }
 
-    public boolean isDuplicateSkip() { return duplicateSkip; }
-    public void setDuplicateSkip(boolean duplicateSkip) { this.duplicateSkip = duplicateSkip; }
+    public String getSharedImportedDir() { return sharedImportedDir; }
+    public void setSharedImportedDir(String sharedImportedDir) { this.sharedImportedDir = sharedImportedDir; }
 
-    public ImportMode getImportMode() { return importMode; }
-    public void setImportMode(ImportMode importMode) { this.importMode = importMode; }
+    public String getSharedFailedDir() { return sharedFailedDir; }
+    public void setSharedFailedDir(String sharedFailedDir) { this.sharedFailedDir = sharedFailedDir; }
 
-    public String getYtdlpBinary() { return ytdlpBinary; }
-    public void setYtdlpBinary(String ytdlpBinary) { this.ytdlpBinary = ytdlpBinary; }
+    public String getSharedQueueDir() { return sharedQueueDir; }
+    public void setSharedQueueDir(String sharedQueueDir) { this.sharedQueueDir = sharedQueueDir; }
 
-    public String getFfmpegBinary() { return ffmpegBinary; }
-    public void setFfmpegBinary(String ffmpegBinary) { this.ffmpegBinary = ffmpegBinary; }
+    public String getAppleMusicImportDir() { return appleMusicImportDir; }
+    public void setAppleMusicImportDir(String appleMusicImportDir) { this.appleMusicImportDir = appleMusicImportDir; }
 
-    public String getFfprobeBinary() { return ffprobeBinary; }
-    public void setFfprobeBinary(String ffprobeBinary) { this.ffprobeBinary = ffprobeBinary; }
+    public int getMasterScanIntervalSeconds() { return masterScanIntervalSeconds; }
+    public void setMasterScanIntervalSeconds(int masterScanIntervalSeconds) { this.masterScanIntervalSeconds = masterScanIntervalSeconds; }
+
+    public int getCleanupRetentionDays() { return cleanupRetentionDays; }
+    public void setCleanupRetentionDays(int cleanupRetentionDays) { this.cleanupRetentionDays = cleanupRetentionDays; }
+
+    public String getCleanupMode() { return cleanupMode; }
+    public void setCleanupMode(String cleanupMode) { this.cleanupMode = cleanupMode; }
 
     public boolean isTelegramEnabled() { return telegramEnabled; }
     public void setTelegramEnabled(boolean telegramEnabled) { this.telegramEnabled = telegramEnabled; }
@@ -66,6 +91,18 @@ public class AppProperties {
     public String getTelegramAllowedUserIds() { return telegramAllowedUserIds; }
     public void setTelegramAllowedUserIds(String telegramAllowedUserIds) { this.telegramAllowedUserIds = telegramAllowedUserIds; }
 
+    public int getMaxPlaylistItems() { return maxPlaylistItems; }
+    public void setMaxPlaylistItems(int maxPlaylistItems) { this.maxPlaylistItems = maxPlaylistItems; }
+
+    public String getImportMode() { return importMode; }
+    public void setImportMode(String importMode) { this.importMode = importMode; }
+
+    public String getYtdlpBinary() { return ytdlpBinary; }
+    public void setYtdlpBinary(String ytdlpBinary) { this.ytdlpBinary = ytdlpBinary; }
+
+    public String getFfmpegBinary() { return ffmpegBinary; }
+    public void setFfmpegBinary(String ffmpegBinary) { this.ffmpegBinary = ffmpegBinary; }
+
     public boolean isYtdlpEmbedMetadata() { return ytdlpEmbedMetadata; }
     public void setYtdlpEmbedMetadata(boolean ytdlpEmbedMetadata) { this.ytdlpEmbedMetadata = ytdlpEmbedMetadata; }
 
@@ -74,4 +111,7 @@ public class AppProperties {
 
     public boolean isKeepInfoJson() { return keepInfoJson; }
     public void setKeepInfoJson(boolean keepInfoJson) { this.keepInfoJson = keepInfoJson; }
+
+    public String getYtDlpArchiveFile() { return ytDlpArchiveFile; }
+    public void setYtDlpArchiveFile(String ytDlpArchiveFile) { this.ytDlpArchiveFile = ytDlpArchiveFile; }
 }

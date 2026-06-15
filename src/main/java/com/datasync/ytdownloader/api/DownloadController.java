@@ -7,7 +7,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "*") // For browser extension or simple local testing
 public class DownloadController {
 
     private final DownloadQueueService queueService;

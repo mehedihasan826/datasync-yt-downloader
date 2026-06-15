@@ -18,154 +18,109 @@ $machinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
 $env:Path = "$machinePath;$userPath"
 
-Write-Host "Verifying installed tools..."
-$missingTools = $false
-try {
-    yt-dlp --version | Out-Null
-} catch {
-    Write-Host "yt-dlp not found in PATH. Searching for it..." -ForegroundColor Yellow
-    
-    $searchPaths = @(
-        "$env:LOCALAPPDATA\Microsoft\WinGet\Packages",
-        "C:\Program Files",
-        "C:\Program Files (x86)"
-    )
-    
-    $ytdlpExe = $null
-    
-    foreach ($path in $searchPaths) {
-        if (Test-Path $path) {
-            $foundYtdlp = Get-ChildItem -Path $path -Filter "yt-dlp.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-            if ($foundYtdlp) {
-                $ytdlpExe = $foundYtdlp.FullName
-                break
-            }
-        }
-    }
-    
-    if ($ytdlpExe) {
-        Write-Host "Found yt-dlp at: $ytdlpExe" -ForegroundColor Green
-        
-        $ytdlpBin = (Get-Item $ytdlpExe).Directory.FullName
-        $env:Path = "$env:Path;$ytdlpBin"
-    } else {
-        Write-Host "yt-dlp not found after installation. Please manually install yt-dlp and add it to PATH." -ForegroundColor Red
-        $missingTools = $true
-    }
-}
-
-try {
-    ffmpeg -version | Out-Null
-} catch {
-    Write-Host "ffmpeg not found in PATH. Searching for it..." -ForegroundColor Yellow
-    
-    $searchPaths = @(
-        "$env:LOCALAPPDATA\Microsoft\WinGet\Packages",
-        "C:\Program Files",
-        "C:\Program Files (x86)"
-    )
-    
-    $ffmpegExe = $null
-    $ffprobeExe = $null
-    
-    foreach ($path in $searchPaths) {
-        if (Test-Path $path) {
-            $foundFfmpeg = Get-ChildItem -Path $path -Filter "ffmpeg.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-            if ($foundFfmpeg) {
-                $ffmpegExe = $foundFfmpeg.FullName
-                $ffprobeExe = Join-Path -Path $foundFfmpeg.Directory.FullName -ChildPath "ffprobe.exe"
-                if (-not (Test-Path $ffprobeExe)) { $ffprobeExe = $null }
-                break
-            }
-        }
-    }
-    
-    if ($ffmpegExe) {
-        Write-Host "Found ffmpeg at: $ffmpegExe" -ForegroundColor Green
-        if ($ffprobeExe) { Write-Host "Found ffprobe at: $ffprobeExe" -ForegroundColor Green }
-        
-        $ffmpegBin = (Get-Item $ffmpegExe).Directory.FullName
-        $env:Path = "$env:Path;$ffmpegBin"
-    } else {
-        Write-Host "ffmpeg not found after installation. Please manually install ffmpeg and add it to PATH." -ForegroundColor Red
-        $missingTools = $true
-    }
-}
-
-if ($missingTools) {
-    Write-Host "Please close and reopen PowerShell, then run .\scripts\run-windows.ps1 again." -ForegroundColor Yellow
-}
-
 $UserName = [Environment]::UserName
 $WorkDir = "C:\Users\$UserName\Music\DataSyncYTDownloaderWork"
 
-if (Test-Path "C:\Users\$UserName\OneDrive") {
-    $MusicImportDir = "C:\Users\$UserName\OneDrive\Music\DataSyncYTDownloader\Ready"
-} else {
-    $MusicImportDir = "C:\Users\$UserName\Music\Apple Music\Media\Automatically Add to Apple Music"
+# Detect Google Drive
+$GDriveRoot = $null
+$searchDirs = @(
+    "G:\My Drive",
+    "C:\Users\$UserName\My Drive",
+    "C:\Users\$UserName\Google Drive",
+    "C:\Users\$UserName\Google Drive\My Drive"
+)
+
+foreach ($dir in $searchDirs) {
+    if (Test-Path $dir) {
+        $GDriveRoot = $dir
+        break
+    }
 }
 
 Write-Host "Creating .env if missing..."
 if (-not (Test-Path .env)) {
-    $envContent = Get-Content .env.example -Raw
-    $envContent = $envContent -replace 'WORK_DIR=.*', "WORK_DIR=$WorkDir"
-    $envContent = $envContent -replace 'MUSIC_IMPORT_DIR=.*', "MUSIC_IMPORT_DIR=$MusicImportDir"
-    $envContent = $envContent -replace 'IMPORT_MODE=.*', "IMPORT_MODE=READY_FOLDER"
-    
-    if ($ytdlpExe) {
-        $envContent = $envContent -replace 'YTDLP_BINARY=.*', "YTDLP_BINARY=$ytdlpExe"
-    }
-    if ($ffmpegExe) {
-        $envContent = $envContent -replace 'FFMPEG_BINARY=.*', "FFMPEG_BINARY=$ffmpegExe"
-    }
-    if ($ffprobeExe) {
-        $envContent = $envContent -replace 'FFPROBE_BINARY=.*', "FFPROBE_BINARY=$ffprobeExe"
-    }
+    $envContent = @"
+SERVER_PORT=8765
+
+MACHINE_NAME=windows-secondary
+IS_MASTER_MUSIC_MACHINE=false
+
+WORK_DIR=$WorkDir
+
+"@
     
     Set-Content -Path .env -Value $envContent
-    Write-Host ".env created with detected paths." -ForegroundColor Yellow
+
+    if ($GDriveRoot) {
+        Add-Content -Path .env -Value "GOOGLE_DRIVE_ROOT=$GDriveRoot"
+        Add-Content -Path .env -Value "SHARED_READY_DIR=$GDriveRoot\Music\DataSyncYTDownloader\Ready"
+        Add-Content -Path .env -Value "SHARED_IMPORTED_DIR=$GDriveRoot\Music\DataSyncYTDownloader\Imported"
+        Add-Content -Path .env -Value "SHARED_FAILED_DIR=$GDriveRoot\Music\DataSyncYTDownloader\Failed"
+        Add-Content -Path .env -Value "SHARED_QUEUE_DIR=$GDriveRoot\Music\DataSyncYTDownloader\Queue"
+        Add-Content -Path .env -Value "YTDLP_ARCHIVE_FILE=$GDriveRoot\Music\DataSyncYTDownloader\archive.txt"
+    } else {
+        Add-Content -Path .env -Value "GOOGLE_DRIVE_ROOT="
+        Add-Content -Path .env -Value "SHARED_READY_DIR="
+        Add-Content -Path .env -Value "SHARED_IMPORTED_DIR="
+        Add-Content -Path .env -Value "SHARED_FAILED_DIR="
+        Add-Content -Path .env -Value "SHARED_QUEUE_DIR="
+        Add-Content -Path .env -Value "YTDLP_ARCHIVE_FILE="
+    }
+    
+    $envRest = @"
+
+APPLE_MUSIC_IMPORT_DIR=
+
+MASTER_SCAN_INTERVAL_SECONDS=60
+CLEANUP_RETENTION_DAYS=30
+CLEANUP_MODE=manual
+
+TELEGRAM_ENABLED=false
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_BOT_USERNAME=
+TELEGRAM_ALLOWED_USER_IDS=
+
+MAX_PLAYLIST_ITEMS=50
+IMPORT_MODE=SHARED_DRIVE_AND_MASTER_IMPORT
+
+YTDLP_BINARY=yt-dlp
+FFMPEG_BINARY=ffmpeg
+YTDLP_EMBED_METADATA=true
+YTDLP_EMBED_THUMBNAIL=true
+KEEP_INFO_JSON=true
+"@
+    
+    Add-Content -Path .env -Value $envRest
+    Write-Host ".env created with detected paths." -ForegroundColor Green
 } else {
-    Write-Host ".env already exists."
-    
-    $existingEnv = Get-Content .env -Raw
-    $envUpdated = $false
-    
-    if ($ytdlpExe) {
-        $existingEnv = $existingEnv -replace 'YTDLP_BINARY=.*', "YTDLP_BINARY=$ytdlpExe"
-        $envUpdated = $true
-    }
-    if ($ffmpegExe) {
-        $existingEnv = $existingEnv -replace 'FFMPEG_BINARY=.*', "FFMPEG_BINARY=$ffmpegExe"
-        $envUpdated = $true
-    }
-    if ($ffprobeExe) {
-        $existingEnv = $existingEnv -replace 'FFPROBE_BINARY=.*', "FFPROBE_BINARY=$ffprobeExe"
-        $envUpdated = $true
-    }
-    
-    if ($existingEnv -match '/Users/yourname') {
-        $existingEnv = $existingEnv -replace 'WORK_DIR=.*', "WORK_DIR=$WorkDir"
-        $existingEnv = $existingEnv -replace 'MUSIC_IMPORT_DIR=.*', "MUSIC_IMPORT_DIR=$MusicImportDir"
-        $existingEnv = $existingEnv -replace 'IMPORT_MODE=.*', "IMPORT_MODE=READY_FOLDER"
-        $envUpdated = $true
-    }
-    
-    if ($envUpdated) {
-        Set-Content -Path .env -Value $existingEnv
-        Write-Host ".env updated with detected paths." -ForegroundColor Yellow
-    }
-    
-    Write-Host "Recommended paths:" -ForegroundColor Cyan
+    Write-Host ".env already exists. Not overwriting." -ForegroundColor Yellow
+    Write-Host "Recommended Windows defaults:" -ForegroundColor Cyan
+    Write-Host "MACHINE_NAME=windows-secondary"
+    Write-Host "IS_MASTER_MUSIC_MACHINE=false"
     Write-Host "WORK_DIR=$WorkDir"
-    Write-Host "MUSIC_IMPORT_DIR=$MusicImportDir"
-    if ($ytdlpExe) { Write-Host "YTDLP_BINARY=$ytdlpExe" }
-    if ($ffmpegExe) { Write-Host "FFMPEG_BINARY=$ffmpegExe" }
-    if ($ffprobeExe) { Write-Host "FFPROBE_BINARY=$ffprobeExe" }
+    if ($GDriveRoot) {
+        Write-Host "SHARED_READY_DIR=$GDriveRoot\Music\DataSyncYTDownloader\Ready"
+        Write-Host "YTDLP_ARCHIVE_FILE=$GDriveRoot\Music\DataSyncYTDownloader\archive.txt"
+    }
 }
 
-Write-Host "Ensuring WORK_DIR and READY_FOLDER exist..."
+Write-Host "Ensuring WORK_DIR exists..."
 if (-not (Test-Path $WorkDir)) { New-Item -ItemType Directory -Force -Path $WorkDir | Out-Null }
-if (-not (Test-Path $MusicImportDir)) { New-Item -ItemType Directory -Force -Path $MusicImportDir | Out-Null }
+
+if ($GDriveRoot) {
+    Write-Host "Ensuring Google Drive shared folders exist..."
+    $readyDir = "$GDriveRoot\Music\DataSyncYTDownloader\Ready"
+    $importedDir = "$GDriveRoot\Music\DataSyncYTDownloader\Imported"
+    $failedDir = "$GDriveRoot\Music\DataSyncYTDownloader\Failed"
+    $queueDir = "$GDriveRoot\Music\DataSyncYTDownloader\Queue"
+    
+    if (-not (Test-Path $readyDir)) { New-Item -ItemType Directory -Force -Path $readyDir | Out-Null }
+    if (-not (Test-Path $importedDir)) { New-Item -ItemType Directory -Force -Path $importedDir | Out-Null }
+    if (-not (Test-Path $failedDir)) { New-Item -ItemType Directory -Force -Path $failedDir | Out-Null }
+    if (-not (Test-Path $queueDir)) { New-Item -ItemType Directory -Force -Path $queueDir | Out-Null }
+} else {
+    Write-Host "Google Drive not found. You will be using local-output." -ForegroundColor Yellow
+}
 
 Write-Host "Building application with Maven Wrapper..."
 if (-not (Test-Path .\mvnw.cmd)) {

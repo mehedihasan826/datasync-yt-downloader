@@ -27,7 +27,17 @@ public class StartupValidator {
 
         // Ensure directories exist
         ensureDir(properties.getWorkDir(), "Work Directory");
-        ensureDir(properties.getMusicImportDir(), "Music Import Directory");
+        
+        if (properties.getGoogleDriveRoot() != null && !properties.getGoogleDriveRoot().isBlank()) {
+            ensureDir(properties.getSharedReadyDir(), "Shared Ready Directory");
+            ensureDir(properties.getSharedImportedDir(), "Shared Imported Directory");
+            ensureDir(properties.getSharedFailedDir(), "Shared Failed Directory");
+            ensureDir(properties.getSharedQueueDir(), "Shared Queue Directory");
+        }
+        
+        if (properties.isMasterMusicMachine() && properties.getAppleMusicImportDir() != null && !properties.getAppleMusicImportDir().isBlank()) {
+            ensureDir(properties.getAppleMusicImportDir(), "Apple Music Import Directory");
+        }
 
         // Validate dependencies
         if (!isCommandAvailable(properties.getYtdlpBinary(), "--version")) {
@@ -36,16 +46,13 @@ public class StartupValidator {
         if (!isCommandAvailable(properties.getFfmpegBinary(), "-version")) {
             log.error("ffmpeg not found! Please install it and ensure it is in the system PATH.");
         }
-        if (!isCommandAvailable(properties.getFfprobeBinary(), "-version")) {
-            log.warn("ffprobe not found! Thumbnail and metadata handling might fail.");
-        }
         
         log.info("Startup validation complete.");
     }
 
     private void ensureDir(String path, String name) {
         if (path == null || path.isBlank()) {
-            throw new RuntimeException(name + " path is not configured!");
+            return;
         }
         File dir = new File(path);
         if (!dir.exists()) {
@@ -59,6 +66,7 @@ public class StartupValidator {
 
     private boolean isCommandAvailable(String command, String versionArg) {
         try {
+            if (command == null || command.isBlank()) return false;
             int exitCode = commandRunner.runCommandAndWait(command, versionArg);
             return exitCode == 0;
         } catch (Exception e) {

@@ -82,12 +82,23 @@ public class TelegramBotService implements LongPollingSingleThreadUpdateConsumer
                 return;
             }
 
-            if (text.startsWith("http") && text.contains("youtube.com") || text.contains("youtu.be")) {
+            if (text.startsWith("http") && (text.contains("youtube.com") || text.contains("youtu.be"))) {
                 boolean isPlaylist = text.contains("list=");
-                String jobId = queueService.queueJob(text, isPlaylist, "telegram");
-                sendMessage(chatId, "Queued job: " + jobId + "\nYou can check status on the local web UI.");
+                String jobId = queueService.queueJob(text, isPlaylist, "telegram:" + chatId);
+                sendMessage(chatId, "Queued job: " + jobId);
             } else {
                 sendMessage(chatId, "Please send a valid YouTube video or playlist URL.");
+            }
+        }
+    }
+
+    public void notifyStatus(String source, String message) {
+        if (source != null && source.startsWith("telegram:")) {
+            try {
+                Long chatId = Long.parseLong(source.split(":")[1]);
+                sendMessage(chatId, message);
+            } catch (Exception e) {
+                log.warn("Could not parse telegram chatId from source: " + source, e);
             }
         }
     }

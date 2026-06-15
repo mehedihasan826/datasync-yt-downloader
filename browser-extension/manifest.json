@@ -1,17 +1,47 @@
 {
   "manifest_version": 3,
   "name": "DataSync YT Downloader",
-  "version": "1.0",
+  "version": "1.1",
   "description": "Send YouTube videos and playlists to local DataSync downloader.",
-  "action": {
-    "default_popup": "popup.html"
-  },
   "permissions": [
     "activeTab",
-    "scripting"
+    "tabs",
+    "storage"
   ],
   "host_permissions": [
     "http://localhost:8765/*",
-    "https://*.youtube.com/*"
-  ]
+    "https://www.youtube.com/*",
+    "https://youtube.com/*",
+    "https://music.youtube.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://youtube.com/*",
+        "https://music.youtube.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
 }

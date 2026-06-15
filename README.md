@@ -1,84 +1,109 @@
-# datasync-yt-downloader
+# DataSync YT Downloader
 
 A local YouTube music downloader and Apple Music importer for macOS and Windows. 
-This application provides a local web UI, browser extension, and optional Telegram bot to queue YouTube videos or playlists for downloading. It leverages `yt-dlp` for downloading, audio extraction, metadata embedding, and cover art embedding before moving the final file to your music library.
+
+## What This App Does
+This application provides a local web UI, a browser extension, and an optional Telegram bot to queue YouTube videos or playlists for downloading. It leverages `yt-dlp` for downloading high-quality M4A audio, embedding metadata and cover art before moving the final file to your music library. It is built to seamlessly sync music downloaded from secondary machines (e.g. Windows) to a primary master machine (Mac) via Google Drive, and then into Apple Music.
 
 > **DISCLAIMER:** This application is for personal/private use only. The tool must not be used to violate copyright or platform terms. It is designed solely for music/audio that the user has explicit rights or permission to download.
 
-## Features
-- Downloads high-quality M4A audio via `yt-dlp`.
-- Metadata and Cover Art embedding directly via `yt-dlp` and `ffmpeg`.
-- Local Web UI.
-- Chrome Browser Extension.
-- Optional Telegram Bot for remote queuing.
-- Smart duplicate skipping via `yt-dlp` download archive.
+## Recommended Setup
 
-## Requirements
-- Java 21
-- `yt-dlp`
-- `ffmpeg`
+- **Mac** = Master Music Machine
+- **Windows** = Secondary downloader
+- **Google Drive Desktop** installed on both machines
+- **Google Drive** is the shared staging/backup area
+- **Mac** automatically imports into Apple Music
+- **iPhone sync** happens from Mac Finder/Music
 
-*(Note: Maven is not required globally as this project uses the Maven Wrapper)*
+## Folder Lifecycle
 
-## Setup Instructions
+- **`Ready`**: Downloaded audio, but not imported by the master machine yet.
+- **`Imported`**: Already imported into Apple Music. This serves as a backup and can be safely deleted later.
+- **`Failed`**: Failed cases.
+- **`Apple Music import folder`**: The actual Apple Music library import path. **Files here are NEVER automatically deleted.**
 
-### 1. Configure Environment Variables
-1. Copy `.env.example` to `.env`:
-   ```bash
-   cp .env.example .env
+## Windows Setup (Secondary)
+
+1. Open PowerShell and run the setup script:
+   ```powershell
+   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+   .\scripts\setup-windows.ps1
    ```
-2. Edit `.env` with your paths and optional settings:
-   - **TELEGRAM_BOT_TOKEN** (optional): Talk to BotFather on Telegram to create a bot. Set `TELEGRAM_ENABLED=true` to use it.
-   - **WORK_DIR**: Temporary processing folder where `yt-dlp` runs and stores the duplicate archive.
-   - **MUSIC_IMPORT_DIR**: Final destination folder for M4A files.
+2. The script will install `yt-dlp`, `ffmpeg`, and Java 21 via winget.
+3. It will automatically detect your Google Drive path and configure the `.env` file.
+4. Run the app:
+   ```powershell
+   .\scripts\run-windows.ps1
+   ```
 
-### 2. macOS Setup
-Run the macOS setup script to install dependencies via Homebrew and build the app:
-```bash
-./scripts/setup-macos.sh
-```
+## Mac Setup (Master)
 
-**macOS Apple Music Sync:**
-You can set `IMPORT_MODE=AUTO_FOLDER` and `MUSIC_IMPORT_DIR` to your `~/Music/Music/Media/Automatically Add to Music.localized` folder. Apple Music will automatically import any M4A file placed there.
+1. Open Terminal and run the setup script:
+   ```bash
+   ./scripts/setup-macos.sh
+   ```
+2. The script will install `yt-dlp`, `ffmpeg`, and Java 21 via Homebrew.
+3. It will automatically detect your Google Drive path and configure the `.env` file for the Master role.
+4. Run the app:
+   ```bash
+   ./scripts/run-macos.sh
+   ```
 
-### 3. Windows Setup
-Run the Windows setup script (uses `winget` to install dependencies):
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\scripts\setup-windows.ps1
-```
+## Browser Extension & Features
 
-**Windows Apple Music Sync:**
-- Default `IMPORT_MODE` for Windows is `READY_FOLDER`.
-- The app will automatically configure your `MUSIC_IMPORT_DIR` to use your OneDrive Music folder if it exists (`C:\Users\<user>\OneDrive\Music\DataSyncYTDownloader\Ready`), otherwise it will fall back to your local Music folder.
-- Final tagged M4A files are saved to this Ready folder.
-- You can manually import this folder or files into the Apple Music for Windows application.
-- To sync to an iPhone, use the Apple Devices app from the Microsoft Store.
+The custom browser extension is the primary way to interact with the downloader. It seamlessly integrates into your YouTube experience.
 
-## Running the Application
-**macOS:**
-```bash
-./scripts/run-macos.sh
-```
+1. Go to `chrome://extensions` in your Chromium-based browser (Chrome, Edge, Brave, etc).
+2. Enable **Developer mode** in the top right.
+3. Click **Load unpacked** and select the `browser-extension` folder.
 
-**Windows:**
-```powershell
-.\scripts\run-windows.ps1
-```
+### Key Extension Features & Buttons:
+- **Native YouTube Buttons:** The extension injects two sleek buttons directly into the native YouTube interface next to the Like and Share buttons:
+  - **`⬇ DataSync Video`**: Clicking this downloads just the current individual video/song you are watching.
+  - **`Mix/Playlist`**: This secondary button automatically appears if you are viewing a YouTube Mix (`start_radio=1`) or a standard Playlist (`list=`). Clicking it queues up the entire playlist/mix for batch processing.
+- **SPA Navigation Support:** Because YouTube is a Single Page Application (SPA), the extension actively tracks your URL and updates both buttons dynamically as you click between videos without reloading the page.
+- **Live Status Polling:** Clicking either download button will give you real-time feedback directly on the page. The button text actively updates by polling your local backend. You will see these statuses:
+  - ⏳ **`Queueing...` / `Queued`**: The backend has received the request and placed it in the processing queue.
+  - ⬇️ **`Downloading (XX%)`**: The audio is actively being downloaded, extracted, and post-processed. The percentage reflects `yt-dlp`'s exact progress.
+  - ✅ **`Downloaded`**: The download and Apple Music import processes have completely finished.
+  - ✅ **`Already Downloaded`**: The duplicate prevention system recognized the video ID inside your `archive.txt`, so `yt-dlp` intentionally skipped downloading it to prevent clutter.
+  - ❌ **`Failed`**: The download or import failed (e.g. video unavailable, network crash).
+- **Popup Interface:** If you prefer, you can click the extension icon in your browser toolbar to open a clean, dark-themed popup. It intelligently detects your current page (identifying if it's a single video or a playlist) and allows you to easily jump to the Local Web App console.
+- **Global CORS Routing:** The extension safely routes all network requests to your local backend (`localhost:8765`) via a background Service Worker, completely bypassing normal browser cross-origin constraints.
 
-## Using the Application
-1. **Local Web UI**: Open [http://localhost:8765](http://localhost:8765)
-2. **Browser Extension**:
-   - Go to `chrome://extensions` in your Chromium-based browser.
-   - Enable **Developer mode**.
-   - Click **Load unpacked** and select the `browser-extension` folder.
-   - Click the extension on any YouTube video page to send it to the downloader.
-3. **Telegram Bot**: If enabled, message your bot with YouTube links.
+## Telegram Setup and Limitation
 
-## Security Warning
-- **Never commit `.env`!** Keep your API keys and tokens private.
+If `TELEGRAM_ENABLED=true` is set in your `.env`, you can queue downloads by sending YouTube links directly to your Telegram bot. You must specify your Telegram User ID in `TELEGRAM_ALLOWED_USER_IDS` to restrict access.
 
-## Troubleshooting
-- **yt-dlp not found / ffmpeg not found:** Ensure they are in your system PATH. If the app fails to process audio, close and reopen PowerShell/Terminal, then verify by running `yt-dlp --version` and `ffmpeg -version`.
-- **Browser extension cannot connect:** Ensure the local Spring Boot app is running on port 8765.
-- **Telegram bot not responding:** Ensure `TELEGRAM_ENABLED=true` and your User ID is in `TELEGRAM_ALLOWED_USER_IDS`.
+**Important Limitation:**
+The Telegram bot runs locally on your machine alongside the app. **If all your computers are off, this local Telegram bot cannot receive or process messages.** There is no VPS, server, or offline cloud bot implemented.
+
+## iPhone Sync
+
+To sync your downloaded music to your iPhone:
+1. First connect your iPhone to the Mac using a cable.
+2. Choose "Trust this computer" on your iPhone if prompted.
+3. Open Finder on your Mac, select your iPhone in the sidebar, and enable music sync.
+4. Enable "Show this iPhone when on Wi-Fi" if desired.
+5. In the future, your Mac must be awake and on the same Wi-Fi network to sync wirelessly.
+
+## Duplicate Prevention and Shared Archive
+
+If Google Drive is detected, your setup will automatically set:
+`YTDLP_ARCHIVE_FILE=<Google Drive Root>/Music/DataSyncYTDownloader/archive.txt`
+
+- **Shared Across Machines:** This archive is shared by both Mac and Windows.
+- **Deduplication:** `yt-dlp` automatically skips videos already listed in this archive. Duplicate skipping is based purely on the YouTube video ID, not the song title.
+- **Important Limitations:** 
+  - The exact same song uploaded as a different YouTube video ID may still download again.
+  - Avoid running the exact same playlist on Windows and Mac at exactly the same time. Google Drive sync is not a real-time database or lock system, and concurrent changes might conflict.
+
+## Cleanup Rules
+
+Over time, your `Imported` backup folder may grow large. You can use the Cleanup button in the Local Web UI to delete old files safely.
+
+- **Imported is just a backup:** The `Imported` folder is only a backup created after Apple Music import. It is perfectly safe to delete old Imported backups after your configured retention days.
+- **Safety First:** Cleanup **ONLY** deletes `.m4a` files in the `Imported` backups folder. It **NEVER** deletes Apple Music files, `Ready` files, or `Failed` files.
+- **Duplicate Prevention is unaffected:** Deleting Imported backups does not affect your Apple Music library, and it does not affect duplicate prevention.
+- **Preserve archive.txt:** The `archive.txt` file should be kept permanently because it is the only thing preventing re-downloading the same YouTube video IDs over and over. Cleanup will never touch your `archive.txt`.

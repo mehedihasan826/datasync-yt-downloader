@@ -1,8 +1,9 @@
 package com.datasync.ytdownloader.download;
 
 import com.datasync.ytdownloader.config.AppProperties;
+import com.datasync.ytdownloader.queue.DownloadJob;
+import com.datasync.ytdownloader.queue.DownloadJobStatus;
 import com.datasync.ytdownloader.util.CommandRunner;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +12,8 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class YtDlpService {
@@ -21,14 +24,21 @@ public class YtDlpService {
     private final CommandRunner commandRunner;
     private final ObjectMapper objectMapper;
 
+    // Regex patterns for parsing yt-dlp output
+    private static final Pattern PLAYLIST_PROGRESS_PATTERN = Pattern.compile("\\[download\\] Downloading (?:item|video) (\\d+) of (\\d+)");
+    private static final Pattern PERCENT_PATTERN = Pattern.compile("\\[download\\]\\s+(\\d+\\.\\d+)%\\s+.*?(?:at\\s+([^\\s]+))?\\s+(?:ETA\\s+([^\\s]+))?");
+    private static final Pattern DESTINATION_PATTERN = Pattern.compile("\\[download\\] Destination: (.*)");
+    private static final Pattern EXTRACT_URL_PATTERN = Pattern.compile("\\[youtube\\] Extracting URL: .*");
+    private static final Pattern WEBPAGE_PATTERN = Pattern.compile("\\[youtube\\] .*: Downloading webpage");
+
     public YtDlpService(AppProperties properties, CommandRunner commandRunner, ObjectMapper objectMapper) {
         this.properties = properties;
         this.commandRunner = commandRunner;
         this.objectMapper = objectMapper;
     }
 
-    public List<DownloadResult> download(String url, boolean isPlaylist, String jobId) throws Exception {
-        File jobDir = new File(properties.getWorkDir(), "jobs/" + jobId);
+    public List<DownloadResult> download(DownloadJob job) throws Exception {
+        File jobDir = new File(properties.getWorkDir(), "jobs/" + job.getId());
         if (!jobDir.exists() && !jobDir.mkdirs()) {
             throw new RuntimeException("Failed to create job directory: " + jobDir.getAbsolutePath());
         }
@@ -53,13 +63,14 @@ public class YtDlpService {
             command.add("--write-info-json");
         }
 
-        command.add("--download-archive"); command.add(new File(properties.getWorkDir(), "archive.txt").getAbsolutePath());
-        command.add("--no-progress");
+        File archiveFile = resolveAndMergeArchiveFile();
+        command.add("--download-archive"); command.add(archiveFile.getAbsolutePath());
         
         File downloadedFilesLog = new File(jobDir, "downloaded-files.txt");
         command.add("--print-to-file"); command.add("after_move:filepath"); command.add(downloadedFilesLog.getAbsolutePath());
 
-        if (isPlaylist) {
+        String url = job.getUrl();
+        if (job.isPlaylist()) {
             command.add("--yes-playlist");
             command.add("--playlist-end"); command.add(String.valueOf(properties.getMaxPlaylistItems()));
             command.add("--output"); command.add(jobDir.toPath().resolve("%(playlist_index)03d - %(title).200U [%(id)s].%(ext)s").toString());
@@ -67,7 +78,6 @@ public class YtDlpService {
             command.add("--no-playlist");
             command.add("--output"); command.add(jobDir.toPath().resolve("%(title).200U [%(id)s].%(ext)s").toString());
 
-            // Strip playlist parameters for single video mode
             if (url.contains("youtube.com/watch")) {
                 url = url.replaceAll("(?i)(?:&|\\?)(?:list|index)=[^&]*", "");
                 if (url.contains("&") && !url.contains("?")) {
@@ -84,12 +94,125 @@ public class YtDlpService {
 
         log.info("Running yt-dlp: {}", String.join(" ", command));
 
-        CommandRunner.CommandResult result = commandRunner.runCommandAndWaitWithOutput(command.toArray(new String[0]));
+        CommandRunner.CommandResult result = commandRunner.runCommandAndWaitWithOutput(line -> parseOutputLine(job, line), command.toArray(new String[0]));
         if (result.exitCode != 0) {
             throw new RuntimeException("yt-dlp exited with code " + result.exitCode + "\nLogs:\n" + result.output);
         }
 
-        return parseDownloadedFilesLog(downloadedFilesLog);
+        List<DownloadResult> results = parseDownloadedFilesLog(downloadedFilesLog);
+        if (results.isEmpty()) {
+            throw new RuntimeException("yt-dlp completed, but no .m4a files were found in output log.");
+        }
+        return results;
+    }
+
+    private void parseOutputLine(DownloadJob job, String line) {
+        job.setLastLogLine(line);
+
+        if (line.contains("[ExtractAudio]") || line.contains("[Metadata]") || line.contains("[EmbedThumbnail]")) {
+            job.setPhase(DownloadJobStatus.POST_PROCESSING);
+            return;
+        }
+
+        Matcher playlistMatcher = PLAYLIST_PROGRESS_PATTERN.matcher(line);
+        if (playlistMatcher.find()) {
+            job.setPhase(DownloadJobStatus.EXTRACTING);
+            int index = Integer.parseInt(playlistMatcher.group(1));
+            int total = Integer.parseInt(playlistMatcher.group(2));
+            job.setPlaylistIndex(index);
+            job.setPlaylistTotal(total);
+            job.setMessage("Downloading item " + index + " of " + total);
+            return;
+        }
+
+        Matcher destMatcher = DESTINATION_PATTERN.matcher(line);
+        if (destMatcher.find()) {
+            String dest = destMatcher.group(1);
+            File destFile = new File(dest);
+            job.setCurrentTitle(destFile.getName());
+            return;
+        }
+
+        if (EXTRACT_URL_PATTERN.matcher(line).matches() || WEBPAGE_PATTERN.matcher(line).matches()) {
+            job.setPhase(DownloadJobStatus.EXTRACTING);
+            return;
+        }
+
+        Matcher percentMatcher = PERCENT_PATTERN.matcher(line);
+        if (percentMatcher.find()) {
+            job.setPhase(DownloadJobStatus.DOWNLOADING);
+            try {
+                double percent = Double.parseDouble(percentMatcher.group(1));
+                job.setCurrentPercent(percent);
+                
+                String speed = percentMatcher.group(2);
+                if (speed != null) job.setSpeed(speed);
+                
+                String eta = percentMatcher.group(3);
+                if (eta != null) job.setEta(eta);
+
+                if (job.getPlaylistTotal() != null && job.getPlaylistIndex() != null) {
+                    double overall = ((job.getPlaylistIndex() - 1) + (percent / 100.0)) / job.getPlaylistTotal() * 100.0;
+                    job.setOverallPercent(overall);
+                } else if (!job.isPlaylist()) {
+                    job.setOverallPercent(percent);
+                }
+            } catch (Exception ignored) {}
+        }
+    }
+
+    private File resolveAndMergeArchiveFile() {
+        File localArchive = new File(properties.getWorkDir(), "archive.txt");
+        File sharedArchive;
+
+        String configuredShared = properties.getYtDlpArchiveFile();
+        if (configuredShared != null && !configuredShared.isBlank()) {
+            sharedArchive = new File(configuredShared);
+        } else if (properties.getGoogleDriveRoot() != null && !properties.getGoogleDriveRoot().isBlank()) {
+            sharedArchive = new File(properties.getGoogleDriveRoot(), "Music/DataSyncYTDownloader/archive.txt");
+        } else {
+            return localArchive;
+        }
+
+        if (localArchive.exists()) {
+            try {
+                if (!sharedArchive.getParentFile().exists()) {
+                    sharedArchive.getParentFile().mkdirs();
+                }
+                
+                java.util.Set<String> lines = new java.util.LinkedHashSet<>();
+                if (sharedArchive.exists()) {
+                    lines.addAll(java.nio.file.Files.readAllLines(sharedArchive.toPath(), java.nio.charset.StandardCharsets.UTF_8));
+                }
+                
+                List<String> localLines = java.nio.file.Files.readAllLines(localArchive.toPath(), java.nio.charset.StandardCharsets.UTF_8);
+                boolean addedNew = false;
+                for (String line : localLines) {
+                    line = line.trim();
+                    if (!line.isEmpty() && lines.add(line)) {
+                        addedNew = true;
+                    }
+                }
+                
+                if (addedNew || !sharedArchive.exists()) {
+                    java.nio.file.Files.write(sharedArchive.toPath(), lines, java.nio.charset.StandardCharsets.UTF_8);
+                    log.info("Merged local yt-dlp archive into shared archive.");
+                }
+            } catch (Exception e) {
+                log.warn("Failed to merge local archive into shared archive", e);
+            }
+        } else if (!sharedArchive.exists()) {
+            try {
+                if (!sharedArchive.getParentFile().exists()) {
+                    sharedArchive.getParentFile().mkdirs();
+                }
+                sharedArchive.createNewFile();
+            } catch (Exception e) {
+                log.warn("Failed to create shared archive", e);
+            }
+        }
+
+        return sharedArchive;
     }
 
     private List<DownloadResult> parseDownloadedFilesLog(File downloadedFilesLog) {
@@ -105,7 +228,6 @@ public class YtDlpService {
                 if (line.isEmpty()) continue;
                 File m4aFile = new File(line);
                 if (m4aFile.exists() && m4aFile.getName().endsWith(".m4a")) {
-                    // Extract ID and Title from filename: %(title)s [%(id)s].m4a
                     String title = m4aFile.getName().replace(".m4a", "");
                     String videoId = null;
                     int start = title.lastIndexOf('[');

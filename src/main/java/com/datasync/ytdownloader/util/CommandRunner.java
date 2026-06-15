@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.LinkedList;
+import java.util.function.Consumer;
 
 @Component
 public class CommandRunner {
@@ -20,8 +21,13 @@ public class CommandRunner {
     }
 
     public CommandResult runCommandAndWaitWithOutput(String... command) throws Exception {
+        return runCommandAndWaitWithOutput(null, command);
+    }
+
+    public CommandResult runCommandAndWaitWithOutput(Consumer<String> lineCallback, String... command) throws Exception {
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.environment().put("PYTHONIOENCODING", "utf-8");
+        pb.environment().put("PYTHONUTF8", "1");
         pb.redirectErrorStream(true); // merge stderr into stdout
         Process process = pb.start();
 
@@ -32,6 +38,12 @@ public class CommandRunner {
                 lastLines.add(line);
                 if (lastLines.size() > 50) {
                     lastLines.removeFirst();
+                }
+                if (lineCallback != null) {
+                    try {
+                        lineCallback.accept(line);
+                    } catch (Exception ignored) {
+                    }
                 }
             }
         }

@@ -107,20 +107,131 @@ document.addEventListener('DOMContentLoaded', () => {
                 msg.appendChild(provider);
             }
 
+            // Build details text
+            let detailsText = '';
+            if (job.playlistTotal && job.playlistIndex) {
+                detailsText += `Item ${job.playlistIndex}/${job.playlistTotal} &middot; `;
+            }
+            if (job.currentPercent != null) {
+                detailsText += `Current ${job.currentPercent.toFixed(1)}%`;
+            }
+            if (job.overallPercent != null && job.isPlaylist) {
+                detailsText += ` &middot; Overall ${job.overallPercent.toFixed(1)}%`;
+            }
+            
+            let speedEtaText = '';
+            if (job.speed) speedEtaText += job.speed;
+            if (job.eta) speedEtaText += (speedEtaText ? ' &middot; ' : '') + `ETA ${job.eta}`;
+
+            let countsText = `Downloaded: ${job.downloadedFileCount || 0} &middot; Imported: ${job.importedFileCount || 0} &middot; Failed: ${job.failedFileCount || 0}`;
+
+            const details = document.createElement('div');
+            details.className = 'job-details';
+            details.innerHTML = `
+                ${detailsText ? `<div>${detailsText}</div>` : ''}
+                ${speedEtaText ? `<div>${speedEtaText}</div>` : ''}
+                <div class="job-counts">${countsText}</div>
+                ${job.lastLogLine ? `<div class="log-line">${job.lastLogLine}</div>` : ''}
+            `;
+
+            // Progress bar
+            const progressContainer = document.createElement('div');
+            progressContainer.className = 'progress-bar-container';
+            const progressFill = document.createElement('div');
+            progressFill.className = 'progress-bar-fill';
+            
+            let pValue = 0;
+            if (job.overallPercent != null) pValue = job.overallPercent;
+            else if (job.currentPercent != null) pValue = job.currentPercent;
+            if (job.status === 'COMPLETED') pValue = 100;
+            
+            progressFill.style.width = pValue + '%';
+            progressContainer.appendChild(progressFill);
+
             info.appendChild(title);
             info.appendChild(msg);
+            info.appendChild(details);
+            info.appendChild(progressContainer);
+
+            const statusContainer = document.createElement('div');
+            statusContainer.style.display = 'flex';
+            statusContainer.style.flexDirection = 'column';
+            statusContainer.style.alignItems = 'flex-end';
+            statusContainer.style.gap = '8px';
 
             const status = document.createElement('div');
             status.className = `job-status status-${job.status.toLowerCase()}`;
-            status.textContent = job.status.replace('_', ' ');
+            status.textContent = job.status.replace(/_/g, ' ');
+            statusContainer.appendChild(status);
+
+            if (job.phase && job.phase !== job.status) {
+                const phase = document.createElement('div');
+                phase.className = `job-phase`;
+                phase.textContent = job.phase.replace(/_/g, ' ');
+                statusContainer.appendChild(phase);
+            }
 
             card.appendChild(info);
-            card.appendChild(status);
+            card.appendChild(statusContainer);
             jobsContainer.appendChild(card);
         });
     }
 
     // Initial fetch and polling
     fetchJobs();
+    fetchHealth();
     setInterval(fetchJobs, 3000);
+    setInterval(fetchHealth, 10000);
+
+    async function fetchHealth() {
+        try {
+            const response = await fetch(`${API_BASE}/health`);
+            if (!response.ok) return;
+            const health = await response.json();
+            
+            document.getElementById('system-status').classList.remove('hidden');
+            document.getElementById('archive-status').classList.remove('hidden');
+            document.getElementById('file-stats').classList.remove('hidden');
+
+            document.getElementById('stat-machine').textContent = health.machineName || 'Unknown';
+            document.getElementById('stat-master').textContent = health.masterMusicMachine ? 'True' : 'False';
+            document.getElementById('stat-gdrive').textContent = health.googleDriveRootDetected ? 'Detected' : 'Missing';
+
+            const sharedEnabled = health.sharedArchiveEnabled;
+            document.getElementById('stat-archive-enabled').textContent = sharedEnabled ? 'enabled' : 'disabled';
+            document.getElementById('stat-archive-enabled').style.color = sharedEnabled ? 'var(--success)' : 'var(--error)';
+            
+            if (!sharedEnabled) {
+                document.getElementById('archive-warning').classList.remove('hidden');
+            } else {
+                document.getElementById('archive-warning').classList.add('hidden');
+            }
+
+            document.getElementById('count-ready').textContent = health.readyCount !== undefined ? health.readyCount : '-';
+            document.getElementById('count-imported').textContent = health.importedCount !== undefined ? health.importedCount : '-';
+            document.getElementById('count-failed').textContent = health.failedCount !== undefined ? health.failedCount : '-';
+        } catch (err) {
+            console.error("Failed to fetch health:", err);
+        }
+    }
+
+    const btnCleanup = document.getElementById('btn-cleanup');
+    if (btnCleanup) {
+        btnCleanup.addEventListener('click', async () => {
+            if (!confirm("Are you sure you want to delete old imported backups?")) return;
+            
+            try {
+                btnCleanup.disabled = true;
+                const response = await fetch(`${API_BASE}/cleanup/imported`, { method: 'POST' });
+                if (!response.ok) throw new Error("Cleanup failed");
+                const result = await response.json();
+                alert(`Cleanup complete. Deleted ${result.deletedCount} files.`);
+                fetchHealth();
+            } catch (err) {
+                alert(`Cleanup error: ${err.message}`);
+            } finally {
+                btnCleanup.disabled = false;
+            }
+        });
+    }
 });

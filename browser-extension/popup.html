@@ -6,64 +6,75 @@
   <style>
     body {
       font-family: 'Inter', -apple-system, sans-serif;
-      width: 250px;
+      width: 260px;
       padding: 16px;
       margin: 0;
-      background-color: #1a1a1a;
-      color: #ffffff;
+      background-color: #0f172a;
+      color: #f8fafc;
     }
     h2 {
       font-size: 16px;
       margin-top: 0;
-      margin-bottom: 16px;
+      margin-bottom: 8px;
       font-weight: 600;
-      color: #e0e0e0;
+      color: #e2e8f0;
+      text-align: center;
     }
+    #page-type {
+      text-align: center;
+      font-size: 12px;
+      color: #94a3b8;
+      margin-bottom: 16px;
+      min-height: 15px;
+    }
+    .detected { color: #10b981 !important; }
     button {
       width: 100%;
       padding: 10px;
       margin-bottom: 10px;
       border: none;
       border-radius: 8px;
-      background-color: #4CAF50;
+      background-color: #3b82f6;
       color: white;
       font-size: 14px;
-      font-weight: bold;
+      font-weight: 600;
       cursor: pointer;
       transition: background-color 0.2s, transform 0.1s;
     }
-    button:hover {
-      background-color: #45a049;
+    button:hover { background-color: #2563eb; }
+    button:active { transform: scale(0.98); }
+    button.playlist { background-color: #8b5cf6; }
+    button.playlist:hover { background-color: #7c3aed; }
+    button.outline { 
+      background-color: transparent; 
+      border: 1px solid #475569; 
+      margin-top: 4px;
     }
-    button:active {
-      transform: scale(0.98);
-    }
-    button.playlist {
-      background-color: #2196F3;
-    }
-    button.playlist:hover {
-      background-color: #1e88e5;
-    }
+    button.outline:hover { background-color: rgba(255, 255, 255, 0.05); }
     button:disabled {
-      background-color: #555555;
-      color: #888888;
+      background-color: #334155;
+      color: #64748b;
       cursor: not-allowed;
     }
     #status {
       margin-top: 10px;
       font-size: 13px;
-      color: #ff9800;
+      color: #f59e0b;
       text-align: center;
       min-height: 20px;
     }
-    .success { color: #4CAF50 !important; }
-    .error { color: #f44336 !important; }
+    .success { color: #10b981 !important; }
+    .error { color: #ef4444 !important; }
   </style>
 </head>
 <body>
   <h2>DataSync YT Downloader</h2>
-  <button id="btn-video">Download audio</button>
-  <button id="btn-playlist" class="playlist">Download playlist/mix</button>
+  <div id="page-type">Checking page...</div>
+  
+  <button id="btn-video">Download Video</button>
+  <button id="btn-playlist" class="playlist">Download Playlist/Mix</button>
+  <button id="btn-open-app" class="outline">Open Web App</button>
+  
   <div id="status"></div>
   <script src="popup.js"></script>
 </body>

@@ -1,0 +1,38 @@
+.datasync-btn-container {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: 8px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.datasync-btn {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #f1f1f1;
+  border: none;
+  border-radius: 18px;
+  padding: 0 16px;
+  height: 36px;
+  font-family: "Roboto", "Arial", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: background-color 0.2s;
+}
+
+.datasync-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.datasync-btn.ds-success {
+  background-color: #10b981;
+  color: white;
+}
+
+.datasync-btn.ds-error {
+  background-color: #ef4444;
+  color: white;
+}
