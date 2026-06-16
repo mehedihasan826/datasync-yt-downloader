@@ -24,11 +24,37 @@ for dir in "$HOME/Library/CloudStorage/GoogleDrive-"*"/My Drive" "$HOME/Google D
     fi
 done
 
+echo ""
+echo "Choose setup mode:"
+echo "1) Mac master with Google Drive sync [recommended for current user]"
+echo "2) Simple local Mac only"
+echo "3) Secondary downloader"
+echo "4) Custom"
+read -p "Enter choice [default based on detection]: " choice
+
+SETUP_MODE=""
+if [ "$choice" == "1" ]; then
+    SETUP_MODE="MAC_MASTER_WITH_SHARED_DRIVE"
+elif [ "$choice" == "2" ]; then
+    SETUP_MODE="SIMPLE_LOCAL_MAC"
+elif [ "$choice" == "3" ]; then
+    SETUP_MODE="SECONDARY_DOWNLOADER"
+elif [ "$choice" == "4" ]; then
+    SETUP_MODE="CUSTOM"
+else
+    if [ -n "$GDRIVE_ROOT" ]; then
+        SETUP_MODE="MAC_MASTER_WITH_SHARED_DRIVE"
+    else
+        SETUP_MODE="SIMPLE_LOCAL_MAC"
+    fi
+fi
+
 echo "Creating .env if missing..."
 if [ ! -f .env ]; then
     cat <<EOF > .env
 SERVER_PORT=8765
 
+SETUP_MODE=$SETUP_MODE
 MACHINE_NAME=mac-main
 IS_MASTER_MUSIC_MACHINE=true
 

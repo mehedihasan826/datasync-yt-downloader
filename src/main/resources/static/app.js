@@ -190,22 +190,29 @@ document.addEventListener('DOMContentLoaded', () => {
             const health = await response.json();
             
             document.getElementById('system-status').classList.remove('hidden');
-            document.getElementById('archive-status').classList.remove('hidden');
             document.getElementById('file-stats').classList.remove('hidden');
 
-            document.getElementById('stat-machine').textContent = health.machineName || 'Unknown';
-            document.getElementById('stat-master').textContent = health.masterMusicMachine ? 'True' : 'False';
-            document.getElementById('stat-gdrive').textContent = health.googleDriveRootDetected ? 'Detected' : 'Missing';
+            const modeStr = health.setupMode || 'UNKNOWN';
+            const prettyMode = modeStr.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+            document.getElementById('stat-mode').textContent = prettyMode;
 
-            const sharedEnabled = health.sharedArchiveEnabled;
-            document.getElementById('stat-archive-enabled').textContent = sharedEnabled ? 'enabled' : 'disabled';
-            document.getElementById('stat-archive-enabled').style.color = sharedEnabled ? 'var(--success)' : 'var(--error)';
-            
-            if (!sharedEnabled) {
-                document.getElementById('archive-warning').classList.remove('hidden');
+            let roleStr = health.masterMusicMachine ? 'Master Music Machine' : (health.secondaryDownloader ? 'Secondary Downloader' : 'Local Downloader');
+            document.getElementById('stat-role').textContent = roleStr;
+
+            let importStr = health.appleMusicImportEnabled ? 'Apple Music enabled' : 'Disabled';
+            document.getElementById('stat-import').textContent = importStr;
+
+            let syncStr = health.sharedDriveMode ? (health.googleDriveRootDetected ? 'Google Drive enabled' : 'Google Drive missing') : 'None';
+            document.getElementById('stat-sync').textContent = syncStr;
+            if (health.sharedDriveMode && !health.googleDriveRootDetected) {
+                document.getElementById('stat-sync').style.color = 'var(--error)';
             } else {
-                document.getElementById('archive-warning').classList.add('hidden');
+                document.getElementById('stat-sync').style.color = '';
             }
+
+            const sharedArchive = health.sharedArchiveEnabled;
+            let archiveStr = sharedArchive ? 'Shared' : 'Local';
+            document.getElementById('stat-archive').textContent = archiveStr;
 
             document.getElementById('count-ready').textContent = health.readyCount !== undefined ? health.readyCount : '-';
             document.getElementById('count-imported').textContent = health.importedCount !== undefined ? health.importedCount : '-';

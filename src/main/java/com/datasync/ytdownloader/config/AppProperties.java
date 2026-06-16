@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "")
 public class AppProperties {
     
+    private String setupMode;
     private String machineName = "mac-main";
     private boolean isMasterMusicMachine = false;
     private String workDir;
@@ -44,6 +45,35 @@ public class AppProperties {
     private String ytDlpArchiveFile;
 
     // Getters and Setters
+
+    public String getSetupMode() { return setupMode; }
+    public void setSetupMode(String setupMode) { this.setupMode = setupMode; }
+
+    public SetupMode getResolvedSetupMode() {
+        if (setupMode != null && !setupMode.isBlank()) {
+            try {
+                return SetupMode.valueOf(setupMode.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return SetupMode.CUSTOM;
+            }
+        }
+        // Backward compatibility
+        if (isMasterMusicMachine) {
+            if (googleDriveRoot != null && !googleDriveRoot.isBlank()) {
+                return SetupMode.MAC_MASTER_WITH_SHARED_DRIVE;
+            } else {
+                String os = System.getProperty("os.name").toLowerCase();
+                return os.contains("win") ? SetupMode.SIMPLE_LOCAL_WINDOWS : SetupMode.SIMPLE_LOCAL_MAC;
+            }
+        } else {
+            if (googleDriveRoot != null && !googleDriveRoot.isBlank()) {
+                return SetupMode.SECONDARY_DOWNLOADER;
+            } else {
+                String os = System.getProperty("os.name").toLowerCase();
+                return os.contains("win") ? SetupMode.SIMPLE_LOCAL_WINDOWS : SetupMode.SIMPLE_LOCAL_MAC;
+            }
+        }
+    }
 
     public String getMachineName() { return machineName; }
     public void setMachineName(String machineName) { this.machineName = machineName; }

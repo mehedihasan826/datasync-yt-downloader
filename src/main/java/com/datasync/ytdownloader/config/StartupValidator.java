@@ -25,18 +25,37 @@ public class StartupValidator {
     public void validate() {
         log.info("Validating startup dependencies and configuration...");
 
+        SetupMode mode = properties.getResolvedSetupMode();
+        log.info("Resolved Setup Mode: {}", mode);
+
         // Ensure directories exist
         ensureDir(properties.getWorkDir(), "Work Directory");
         
-        if (properties.getGoogleDriveRoot() != null && !properties.getGoogleDriveRoot().isBlank()) {
-            ensureDir(properties.getSharedReadyDir(), "Shared Ready Directory");
-            ensureDir(properties.getSharedImportedDir(), "Shared Imported Directory");
-            ensureDir(properties.getSharedFailedDir(), "Shared Failed Directory");
-            ensureDir(properties.getSharedQueueDir(), "Shared Queue Directory");
+        if (mode == SetupMode.MAC_MASTER_WITH_SHARED_DRIVE || 
+            mode == SetupMode.SECONDARY_DOWNLOADER || 
+            mode == SetupMode.MULTI_MAC_SHARED_DRIVE || 
+            mode == SetupMode.WINDOWS_MASTER_WITH_SHARED_DRIVE) {
+            
+            if (properties.getGoogleDriveRoot() == null || properties.getGoogleDriveRoot().isBlank()) {
+                log.warn("Setup mode {} expects a Google Drive Root, but it's not configured.", mode);
+            } else {
+                ensureDir(properties.getSharedReadyDir(), "Shared Ready Directory");
+                ensureDir(properties.getSharedImportedDir(), "Shared Imported Directory");
+                ensureDir(properties.getSharedFailedDir(), "Shared Failed Directory");
+                ensureDir(properties.getSharedQueueDir(), "Shared Queue Directory");
+            }
         }
         
-        if (properties.isMasterMusicMachine() && properties.getAppleMusicImportDir() != null && !properties.getAppleMusicImportDir().isBlank()) {
-            ensureDir(properties.getAppleMusicImportDir(), "Apple Music Import Directory");
+        if (mode == SetupMode.MAC_MASTER_WITH_SHARED_DRIVE || 
+            mode == SetupMode.WINDOWS_MASTER_WITH_SHARED_DRIVE || 
+            mode == SetupMode.SIMPLE_LOCAL_MAC || 
+            mode == SetupMode.SIMPLE_LOCAL_WINDOWS) {
+            
+            if (properties.getAppleMusicImportDir() == null || properties.getAppleMusicImportDir().isBlank()) {
+                log.warn("Setup mode {} expects an Apple Music Import Directory, but it's not configured.", mode);
+            } else {
+                ensureDir(properties.getAppleMusicImportDir(), "Apple Music Import Directory");
+            }
         }
 
         // Validate dependencies

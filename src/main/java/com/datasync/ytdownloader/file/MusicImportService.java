@@ -27,11 +27,45 @@ public class MusicImportService {
 
     public File importFile(File sourceFile, DownloadJob job) throws Exception {
         String originalName = sourceFile.getName();
+        com.datasync.ytdownloader.config.SetupMode mode = properties.getResolvedSetupMode();
 
+        boolean isLocalOnly = mode == com.datasync.ytdownloader.config.SetupMode.SIMPLE_LOCAL_MAC || 
+                              mode == com.datasync.ytdownloader.config.SetupMode.SIMPLE_LOCAL_WINDOWS;
+                              
+        boolean isMaster = mode == com.datasync.ytdownloader.config.SetupMode.MAC_MASTER_WITH_SHARED_DRIVE || 
+                           mode == com.datasync.ytdownloader.config.SetupMode.WINDOWS_MASTER_WITH_SHARED_DRIVE ||
+                           mode == com.datasync.ytdownloader.config.SetupMode.SIMPLE_LOCAL_MAC || 
+                           mode == com.datasync.ytdownloader.config.SetupMode.SIMPLE_LOCAL_WINDOWS;
+
+        if (isLocalOnly) {
+            // Drop directly into Apple Music Import Dir or fallback
+            File targetDir;
+            String appleDirStr = properties.getAppleMusicImportDir();
+            if (appleDirStr != null && !appleDirStr.isBlank() && new File(appleDirStr).exists()) {
+                targetDir = new File(appleDirStr);
+            } else {
+                log.warn("Apple Music import dir missing for local mode. Saving to local-output fallback.");
+                targetDir = new File(properties.getWorkDir(), "local-output");
+                if (!targetDir.exists()) targetDir.mkdirs();
+            }
+
+            if (job != null) job.setPhase(DownloadJobStatus.IMPORTING_TO_APPLE_MUSIC);
+            File finalFile = getUniqueFile(targetDir, originalName);
+            log.info("Local mode: Copying file directly to {}", finalFile.getAbsolutePath());
+            Files.copy(sourceFile.toPath(), finalFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            
+            if (job != null) {
+                job.incrementDownloadedFileCount();
+                job.incrementImportedFileCount();
+            }
+            return finalFile;
+        }
+
+        // Shared drive modes
         File readyDir = new File(properties.getSharedReadyDir() != null ? properties.getSharedReadyDir() : "");
         File targetDir;
-
         boolean gDriveExists = readyDir.exists() && readyDir.isDirectory();
+
         if (gDriveExists) {
             targetDir = readyDir;
         } else {
@@ -45,12 +79,12 @@ public class MusicImportService {
         if (job != null) job.setPhase(DownloadJobStatus.COPYING_TO_DRIVE);
         
         File targetReadyFile = getUniqueFile(targetDir, originalName);
-        log.info("Copying file to {}", targetReadyFile.getAbsolutePath());
+        log.info("Shared mode: Copying file to {}", targetReadyFile.getAbsolutePath());
         Files.copy(sourceFile.toPath(), targetReadyFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         
         if (job != null) job.incrementDownloadedFileCount();
 
-        if (properties.isMasterMusicMachine() && gDriveExists) {
+        if (isMaster && gDriveExists) {
             String appleDirStr = properties.getAppleMusicImportDir();
             if (appleDirStr != null && !appleDirStr.isBlank()) {
                 File appleDir = new File(appleDirStr);

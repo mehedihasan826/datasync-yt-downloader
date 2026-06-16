@@ -1,0 +1,11 @@
+package com.datasync.ytdownloader.config;
+
+public enum SetupMode {
+    SIMPLE_LOCAL_MAC,
+    SIMPLE_LOCAL_WINDOWS,
+    MAC_MASTER_WITH_SHARED_DRIVE,
+    WINDOWS_MASTER_WITH_SHARED_DRIVE,
+    SECONDARY_DOWNLOADER,
+    MULTI_MAC_SHARED_DRIVE,
+    CUSTOM
+}

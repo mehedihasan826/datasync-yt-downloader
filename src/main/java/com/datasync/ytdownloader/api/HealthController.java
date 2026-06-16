@@ -26,8 +26,28 @@ public class HealthController {
     public Map<String, Object> health() {
         Map<String, Object> response = new HashMap<>();
         response.put("status", "ok");
+        
+        com.datasync.ytdownloader.config.SetupMode mode = properties.getResolvedSetupMode();
+        response.put("setupMode", mode.name());
+        
+        boolean localOnlyMode = mode == com.datasync.ytdownloader.config.SetupMode.SIMPLE_LOCAL_MAC || mode == com.datasync.ytdownloader.config.SetupMode.SIMPLE_LOCAL_WINDOWS;
+        boolean sharedDriveMode = mode == com.datasync.ytdownloader.config.SetupMode.MAC_MASTER_WITH_SHARED_DRIVE || 
+                                  mode == com.datasync.ytdownloader.config.SetupMode.WINDOWS_MASTER_WITH_SHARED_DRIVE || 
+                                  mode == com.datasync.ytdownloader.config.SetupMode.MULTI_MAC_SHARED_DRIVE || 
+                                  mode == com.datasync.ytdownloader.config.SetupMode.SECONDARY_DOWNLOADER;
+        boolean masterMode = mode == com.datasync.ytdownloader.config.SetupMode.MAC_MASTER_WITH_SHARED_DRIVE || 
+                             mode == com.datasync.ytdownloader.config.SetupMode.WINDOWS_MASTER_WITH_SHARED_DRIVE || 
+                             mode == com.datasync.ytdownloader.config.SetupMode.SIMPLE_LOCAL_MAC || 
+                             mode == com.datasync.ytdownloader.config.SetupMode.SIMPLE_LOCAL_WINDOWS;
+        boolean secondaryMode = mode == com.datasync.ytdownloader.config.SetupMode.SECONDARY_DOWNLOADER;
+
+        response.put("localOnlyMode", localOnlyMode);
+        response.put("sharedDriveMode", sharedDriveMode);
+        response.put("masterMusicMachine", masterMode);
+        response.put("appleMusicImportEnabled", masterMode);
+        response.put("secondaryDownloader", secondaryMode);
+
         response.put("machineName", properties.getMachineName());
-        response.put("masterMusicMachine", properties.isMasterMusicMachine());
         
         response.put("ytDlpAvailable", isAvailable(properties.getYtdlpBinary(), "--version"));
         response.put("ffmpegAvailable", isAvailable(properties.getFfmpegBinary(), "-version"));

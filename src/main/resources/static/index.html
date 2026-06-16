@@ -12,14 +12,12 @@
         <h1>DataSync <span>Downloader</span></h1>
         <p class="subtitle">Download and import music seamlessly to your local library.</p>
 
-        <div id="system-status" class="system-status hidden">
-            <div class="status-item"><span class="label">Machine:</span> <span id="stat-machine" class="value">-</span></div>
-            <div class="status-item"><span class="label">Master:</span> <span id="stat-master" class="value">-</span></div>
-            <div class="status-item"><span class="label">GDrive:</span> <span id="stat-gdrive" class="value">-</span></div>
-        </div>
-        <div id="archive-status" class="system-status hidden" style="flex-direction: column; gap: 4px; margin-top: -1rem;">
-            <div class="status-item" style="font-size: 0.8rem;"><span class="label">Shared archive:</span> <span id="stat-archive-enabled" class="value">-</span></div>
-            <div id="archive-warning" class="hidden" style="color: var(--warning); font-size: 0.8rem; margin-top: 4px;">Duplicate prevention is local only because shared archive is not configured.</div>
+        <div id="system-status" class="system-status hidden" style="flex-direction: column; align-items: flex-start; gap: 6px;">
+            <div class="status-item"><span class="label">Mode:</span> <span id="stat-mode" class="value" style="font-weight: 600; color: var(--accent-color);">-</span></div>
+            <div class="status-item"><span class="label">Role:</span> <span id="stat-role" class="value">-</span></div>
+            <div class="status-item"><span class="label">Import:</span> <span id="stat-import" class="value">-</span></div>
+            <div class="status-item"><span class="label">Sync:</span> <span id="stat-sync" class="value">-</span></div>
+            <div class="status-item"><span class="label">Archive:</span> <span id="stat-archive" class="value">-</span></div>
         </div>
 
         <div id="file-stats" class="file-stats hidden">

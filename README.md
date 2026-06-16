@@ -1,5 +1,9 @@
 # 🎵 DataSync YT Downloader
 
+<div align="right">
+  <strong>🇺🇸 English</strong> | <a href="README.ja.md">🇯🇵 日本語</a>
+</div>
+
 A local YouTube music downloader and Apple Music importer for macOS and Windows. 🎧
 
 ## 🌟 What This App Does
@@ -26,7 +30,35 @@ This application provides a local web UI, a browser extension, and an optional T
 
 ---
 
-## 🚀 Installation & Setup
+## ⚙️ Installation & Setup
+
+### 🎛️ Choose Your Setup Mode
+
+This application adapts to your specific hardware and cloud storage preferences. When running the setup script, you will be prompted to choose a **Setup Mode**:
+
+1. **`MAC_MASTER_WITH_SHARED_DRIVE`** *(Recommended for Mac + Windows)*
+   - **Use Case:** You have a Mac as your primary Apple Music library, but also want to queue downloads from a Windows PC.
+   - **Behavior:** Requires Google Drive. The Mac monitors Google Drive, imports songs directly into Apple Music, and syncs your iPhone. Windows acts as a secondary downloader.
+
+2. **`SECONDARY_DOWNLOADER`** *(Recommended for Windows secondary)*
+   - **Use Case:** A Windows PC (or second Mac) that only downloads songs to Google Drive for the Master Mac to import.
+   - **Behavior:** Requires Google Drive. Does NOT import into local Apple Music.
+
+3. **`SIMPLE_LOCAL_MAC`**
+   - **Use Case:** You only have one Mac and don't want to use Google Drive.
+   - **Behavior:** No Google Drive needed. Downloads go straight into your Mac's Apple Music library.
+
+4. **`SIMPLE_LOCAL_WINDOWS`**
+   - **Use Case:** You only have one Windows PC and don't want to use Google Drive.
+   - **Behavior:** No Google Drive needed. Downloads go straight into your Windows Apple Music library. *(Note: You may need to manually drag the folder into Apple Music on Windows if auto-import is unreliable).*
+
+5. **`MULTI_MAC_SHARED_DRIVE` / `WINDOWS_MASTER_WITH_SHARED_DRIVE`**
+   - Alternative advanced setups for multiple Macs or using Windows as the primary Apple Music library.
+
+6. **`CUSTOM`**
+   - Provide your exact paths in the `.env` manually.
+
+---
 
 ### 1️⃣ Prerequisites (Both Machines)
 1. Install **[Google Drive Desktop](https://www.google.com/drive/download/)** and sign in. Ensure it's running and your "My Drive" or shared drive is accessible.

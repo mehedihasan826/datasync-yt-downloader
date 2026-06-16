@@ -37,11 +37,37 @@ foreach ($dir in $searchDirs) {
     }
 }
 
+Write-Host ""
+Write-Host "Choose setup mode:"
+Write-Host "1) Secondary downloader with Google Drive sync [recommended for current user]"
+Write-Host "2) Simple local Windows only"
+Write-Host "3) Windows master with Google Drive sync"
+Write-Host "4) Custom"
+$choice = Read-Host "Enter choice [default based on detection]"
+
+$SetupMode = ""
+if ($choice -eq "1") {
+    $SetupMode = "SECONDARY_DOWNLOADER"
+} elseif ($choice -eq "2") {
+    $SetupMode = "SIMPLE_LOCAL_WINDOWS"
+} elseif ($choice -eq "3") {
+    $SetupMode = "WINDOWS_MASTER_WITH_SHARED_DRIVE"
+} elseif ($choice -eq "4") {
+    $SetupMode = "CUSTOM"
+} else {
+    if ($GDriveRoot) {
+        $SetupMode = "SECONDARY_DOWNLOADER"
+    } else {
+        $SetupMode = "SIMPLE_LOCAL_WINDOWS"
+    }
+}
+
 Write-Host "Creating .env if missing..."
 if (-not (Test-Path .env)) {
     $envContent = @"
 SERVER_PORT=8765
 
+SETUP_MODE=$SetupMode
 MACHINE_NAME=windows-secondary
 IS_MASTER_MUSIC_MACHINE=false
 

@@ -34,7 +34,11 @@ public class MasterImportWatcherService {
 
     @Scheduled(fixedDelayString = "${masterScanIntervalSeconds:60}000")
     public void scanAndImport() {
-        if (!properties.isMasterMusicMachine()) {
+        com.datasync.ytdownloader.config.SetupMode mode = properties.getResolvedSetupMode();
+        boolean isSharedMaster = mode == com.datasync.ytdownloader.config.SetupMode.MAC_MASTER_WITH_SHARED_DRIVE || 
+                                 mode == com.datasync.ytdownloader.config.SetupMode.WINDOWS_MASTER_WITH_SHARED_DRIVE;
+
+        if (!isSharedMaster) {
             return;
         }
 
