@@ -1,5 +1,10 @@
 # 🎵 DataSync YT Downloader
 
+<div align="right">
+  <a href="README.md"><img src="https://img.shields.io/badge/Language-English-blue?style=for-the-badge" alt="English"></a>
+  <a href="README.ja.md"><img src="https://img.shields.io/badge/Language-日本語-lightgrey?style=for-the-badge" alt="日本語"></a>
+</div>
+
 A local YouTube music downloader and Apple Music importer for macOS and Windows. 🎧
 
 ## 🌟 What This App Does
