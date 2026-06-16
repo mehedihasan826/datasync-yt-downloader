@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="settings.title">Settings console</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .settings-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 1rem;
+        }
+        .settings-nav a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .settings-nav a:hover {
+            text-decoration: underline;
+        }
+        .section-card {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .section-card h2 {
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .field-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .field-row {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        .validation-badge {
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            text-transform: uppercase;
+        }
+        .valid {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+        }
+        .invalid {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+            cursor: pointer;
+        }
+        .checkbox-row input {
+            width: 1.25rem;
+            height: 1.25rem;
+            cursor: pointer;
+        }
+        select.settings-select {
+            width: 100%;
+            padding: 1.25rem;
+            font-size: 1.1rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            outline: none;
+            cursor: pointer;
+        }
+        select.settings-select option {
+            background: var(--bg-color);
+        }
+        /* Modal for config diff */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-card {
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 700px;
+            padding: 2rem;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-body {
+            overflow-y: auto;
+            margin: 1.5rem 0;
+            flex: 1;
+        }
+        .diff-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 1.25rem;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            font-family: monospace;
+            font-size: 0.8rem;
+            max-height: 350px;
+            overflow-y: auto;
+        }
+        .diff-column {
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: var(--text-secondary);
+        }
+        .diff-column.new-col {
+            color: #6ee7b7;
+            border-left: 1px solid var(--card-border);
+            padding-left: 1rem;
+        }
+        .prereq-box {
+            background: rgba(245, 158, 11, 0.15);
+            border-left: 4px solid var(--warning);
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="glass-container main-card">
+        <div class="settings-nav">
+            <h1 data-i18n="settings.title">Settings console</h1>
+            <a href="/" data-i18n="setup.btn.back">Back to Dashboard</a>
+        </div>
+        <p class="subtitle" data-i18n="settings.desc">View and update configuration</p>
+
+        <form id="settings-form" onsubmit="return false;">
+
+            <!-- SECTION 1: LANGUAGE -->
+            <div class="section-card">
+                <h2 data-i18n="settings.lang_select">Application Language:</h2>
+                <div class="field-group">
+                    <select id="lang-select" class="settings-select">
+                        <option value="en-US">English (US)</option>
+                        <option value="ja-JP">日本語</option>
+                        <option value="bn-BD">বাংলা</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- SECTION 2: SETUP MODE -->
+            <div class="section-card">
+                <h2 data-i18n="setup.mode.title">Choose Setup Mode</h2>
+                <div class="field-group">
+                    <select id="setupMode" class="settings-select">
+                        <option value="SIMPLE_LOCAL_MAC" data-i18n="setup.mode.local_mac.title">Simple Local Mac</option>
+                        <option value="SIMPLE_LOCAL_WINDOWS" data-i18n="setup.mode.local_win.title">Simple Local Windows</option>
+                        <option value="MAC_MASTER_WITH_SHARED_DRIVE" data-i18n="setup.mode.master_mac.title">Mac Master + Google Drive Sync</option>
+                        <option value="WINDOWS_MASTER_WITH_SHARED_DRIVE" data-i18n="setup.mode.master_win.title">Windows Master + Google Drive Sync</option>
+                        <option value="SECONDARY_DOWNLOADER" data-i18n="setup.mode.secondary.title">Secondary Downloader</option>
+                        <option value="CUSTOM" data-i18n="setup.mode.custom.title">Custom Configuration</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- SECTION 3: FOLDER PATHS -->
+            <div class="section-card">
+                <h2 data-i18n="setup.folders.title">Folder Settings</h2>
+                
+                <div id="gdrive-warning" class="prereq-box hidden">
+                    <strong data-i18n="setup.folders.gdrive_missing">This setup mode requires Google Drive Desktop. Please install or sign in to Google Drive Desktop, or choose a Simple Local mode.</strong>
+                </div>
+
+                <div id="apple-music-win-warning" class="prereq-box hidden">
+                    <strong data-i18n="setup.folders.apple_music_win_prereq">Please install Apple Music and Apple Devices from Microsoft Store first.</strong>
+                </div>
+
+                <div id="apple-music-mac-warning" class="prereq-box hidden">
+                    <strong data-i18n="setup.folders.apple_music_mac_missing">Apple Music Automatically Add folder not detected. Please open Apple Music once and retry detection.</strong>
+                </div>
+
+                <div class="field-group">
+                    <label for="workDir" data-i18n="setup.folders.work_dir">Work Directory:</label>
+                    <div class="field-row">
+                        <input type="text" id="workDir" required>
+                        <span id="badge-workDir" class="validation-badge invalid">Invalid</span>
+                    </div>
+                </div>
+
+                <div class="field-group" id="group-googleDriveRoot">
+                    <label for="googleDriveRoot" data-i18n="setup.folders.gdrive_root">Google Drive Root:</label>
+                    <div class="field-row">
+                        <input type="text" id="googleDriveRoot">
+                        <span id="badge-googleDriveRoot" class="validation-badge invalid">Invalid</span>
+                    </div>
+                </div>
+
+                <div class="field-group" id="group-sharedReadyDir">
+                    <label for="sharedReadyDir" data-i18n="setup.folders.ready_dir">Ready Directory (Shared):</label>
+                    <div class="field-row">
+                        <input type="text" id="sharedReadyDir">
+                        <span id="badge-sharedReadyDir" class="validation-badge invalid">Invalid</span>
+                    </div>
+                </div>
+
+                <div class="field-group" id="group-sharedImportedDir">
+                    <label for="sharedImportedDir" data-i18n="setup.folders.imported_dir">Imported Directory (Shared):</label>
+                    <div class="field-row">
+                        <input type="text" id="sharedImportedDir">
+                        <span id="badge-sharedImportedDir" class="validation-badge invalid">Invalid</span>
+                    </div>
+                </div>
+
+                <div class="field-group" id="group-sharedFailedDir">
+                    <label for="sharedFailedDir" data-i18n="setup.folders.failed_dir">Failed Directory (Shared):</label>
+                    <div class="field-row">
+                        <input type="text" id="sharedFailedDir">
+                        <span id="badge-sharedFailedDir" class="validation-badge invalid">Invalid</span>
+                    </div>
+                </div>
+
+                <div class="field-group" id="group-appleMusicImportDir">
+                    <label for="appleMusicImportDir" data-i18n="setup.folders.apple_music_dir">Apple Music Automatically Add Folder:</label>
+                    <div class="field-row">
+                        <input type="text" id="appleMusicImportDir">
+                        <span id="badge-appleMusicImportDir" class="validation-badge invalid">Invalid</span>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label for="ytDlpArchiveFile" data-i18n="setup.folders.archive_file">Archive File (Duplicate Prevention):</label>
+                    <div class="field-row">
+                        <input type="text" id="ytDlpArchiveFile" required>
+                        <span id="badge-ytDlpArchiveFile" class="validation-badge invalid">Invalid</span>
+                    </div>
+                </div>
+
+                <button type="button" id="btn-redetect" class="btn outline" data-i18n="setup.folders.detect_btn">Re-run Folder Detection</button>
+            </div>
+
+            <!-- SECTION 4: TELEGRAM -->
+            <div class="section-card">
+                <h2 data-i18n="setup.telegram.title">Telegram Bot (Optional)</h2>
+                
+                <label class="checkbox-row">
+                    <input type="checkbox" id="telegramEnabled">
+                    <span data-i18n="setup.telegram.enable">Enable Telegram Bot</span>
+                </label>
+
+                <div id="telegram-fields" class="hidden">
+                    <div class="field-group">
+                        <label for="telegramBotToken" data-i18n="setup.telegram.token">Bot Token:</label>
+                        <input type="text" id="telegramBotToken" placeholder="[Configured]">
+                    </div>
+
+                    <div class="field-group">
+                        <label for="telegramBotUsername" data-i18n="setup.telegram.username">Bot Username:</label>
+                        <input type="text" id="telegramBotUsername" placeholder="MyDataSyncBot">
+                    </div>
+
+                    <div class="field-group">
+                        <label for="telegramAllowedUserIds" data-i18n="setup.telegram.allowed_ids">Allowed Telegram User IDs (comma-separated):</label>
+                        <input type="text" id="telegramAllowedUserIds" placeholder="987654321,123456789">
+                    </div>
+
+                    <div class="actions">
+                        <button type="button" id="btn-test-telegram" class="btn secondary" data-i18n="setup.telegram.test_btn">Test Telegram Bot</button>
+                    </div>
+                    <div id="telegram-test-result" class="hidden" style="margin-top: 1rem; padding: 1rem; border-radius: 8px;"></div>
+                </div>
+            </div>
+
+            <!-- SECTION 5: AUTOSTART -->
+            <div class="section-card">
+                <h2 data-i18n="setup.autostart.title">Auto-Start Preferences</h2>
+
+                <label class="checkbox-row">
+                    <input type="checkbox" id="autoStartEnabled">
+                    <span data-i18n="setup.autostart.enable">Start DataSync automatically when I log in</span>
+                </label>
+
+                <label class="checkbox-row">
+                    <input type="checkbox" id="runInBackground">
+                    <span data-i18n="setup.autostart.minimized">Start minimized in the background</span>
+                </label>
+
+                <label class="checkbox-row">
+                    <input type="checkbox" id="openBrowserOnStartup">
+                    <span data-i18n="setup.autostart.open_browser">Open local web UI on startup</span>
+                </label>
+            </div>
+
+            <!-- SECTION 6: EXTENSION SETUP GUIDE LINK -->
+            <div class="section-card" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <h2 data-i18n="setup.extension.title">Browser Extension Setup</h2>
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Need to configure the browser extension companion?</p>
+                <a href="/setup" style="color: var(--accent); font-weight: 600; text-decoration: none;">Launch onboarding wizard to access extension setup guides →</a>
+            </div>
+
+            <!-- SUBMIT ACTION -->
+            <div id="active-jobs-alert" class="error-msg hidden" data-i18n="settings.active_jobs_error">Cannot modify configuration while downloads are running. Please wait for downloads to complete.</div>
+            
+            <button type="button" id="btn-save" class="btn primary" style="width: 100%; padding: 1.25rem;" data-i18n="settings.save_btn">Save Settings</button>
+
+            <!-- RESTART PROMPT BANNER -->
+            <div id="restart-prompt-banner" class="info-step hidden" style="margin-top: 2rem; border-color: var(--warning); background: rgba(245, 158, 11, 0.1);">
+                <p data-i18n="settings.restart_prompt" style="font-weight: 600; margin-bottom: 0.75rem; color: var(--warning);">Critical settings updated. Please restart the application to apply changes.</p>
+                <p data-i18n="settings.restart_warn" style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1rem;">Warning: Restarting will terminate the app. Please ensure it starts up automatically or rerun it manually.</p>
+                <button type="button" id="btn-restart" class="btn secondary" style="width: fit-content; padding: 0.75rem 1.5rem;" data-i18n="settings.restart_btn">Restart App Now</button>
+            </div>
+
+        </form>
+    </div>
+
+    <!-- MODAL FOR CONFIG DIFF COMPARISON -->
+    <div id="diff-modal" class="modal">
+        <div class="modal-card">
+            <h2 data-i18n="settings.comparison.title" style="margin-top: 0;">Confirm Configuration Changes</h2>
+            <p data-i18n="settings.comparison.desc" style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">Please review the changes before saving. A backup of the old .env will be saved.</p>
+            
+            <div class="modal-body">
+                <div class="diff-container">
+                    <div class="diff-column" id="diff-old"></div>
+                    <div class="diff-column new-col" id="diff-new"></div>
+                </div>
+            </div>
+
+            <div class="actions" style="gap: 1rem;">
+                <button type="button" id="btn-diff-cancel" class="btn outline" data-i18n="settings.comparison.cancel">Cancel</button>
+                <button type="button" id="btn-diff-confirm" class="btn primary" data-i18n="settings.comparison.confirm">Confirm and Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="settings.js"></script>
+</body>
+</html>

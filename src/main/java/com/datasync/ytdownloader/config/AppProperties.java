@@ -7,6 +7,12 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "")
 public class AppProperties {
     
+    private boolean setupCompleted = false;
+    private String appLanguage = "en-US";
+    private boolean autoStartEnabled = false;
+    private boolean openBrowserOnStartup = true;
+    private boolean runInBackground = true;
+
     private String setupMode;
     private String machineName = "mac-main";
     private boolean isMasterMusicMachine = false;
@@ -161,4 +167,19 @@ public class AppProperties {
 
     public String getYtDlpArchiveFile() { return ytDlpArchiveFile; }
     public void setYtDlpArchiveFile(String ytDlpArchiveFile) { this.ytDlpArchiveFile = ytDlpArchiveFile; }
+
+    public boolean isSetupCompleted() { return setupCompleted; }
+    public void setSetupCompleted(boolean setupCompleted) { this.setupCompleted = setupCompleted; }
+
+    public String getAppLanguage() { return appLanguage; }
+    public void setAppLanguage(String appLanguage) { this.appLanguage = appLanguage; }
+
+    public boolean isAutoStartEnabled() { return autoStartEnabled; }
+    public void setAutoStartEnabled(boolean autoStartEnabled) { this.autoStartEnabled = autoStartEnabled; }
+
+    public boolean isOpenBrowserOnStartup() { return openBrowserOnStartup; }
+    public void setOpenBrowserOnStartup(boolean openBrowserOnStartup) { this.openBrowserOnStartup = openBrowserOnStartup; }
+
+    public boolean isRunInBackground() { return runInBackground; }
+    public void setRunInBackground(boolean runInBackground) { this.runInBackground = runInBackground; }
 }

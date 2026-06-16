@@ -15,15 +15,16 @@ import java.nio.file.StandardCopyOption;
 
 @Service
 @EnableScheduling
-@ConditionalOnProperty(name = "isMasterMusicMachine", havingValue = "true")
 public class MasterImportWatcherService {
 
     private static final Logger log = LoggerFactory.getLogger(MasterImportWatcherService.class);
 
     private final AppProperties properties;
+    private final MusicImportService musicImportService;
 
-    public MasterImportWatcherService(AppProperties properties) {
+    public MasterImportWatcherService(AppProperties properties, MusicImportService musicImportService) {
         this.properties = properties;
+        this.musicImportService = musicImportService;
     }
 
     @PostConstruct
@@ -34,6 +35,10 @@ public class MasterImportWatcherService {
 
     @Scheduled(fixedDelayString = "${masterScanIntervalSeconds:60}000")
     public void scanAndImport() {
+        if (!properties.isSetupCompleted()) {
+            return;
+        }
+
         com.datasync.ytdownloader.config.SetupMode mode = properties.getResolvedSetupMode();
         boolean isSharedMaster = mode == com.datasync.ytdownloader.config.SetupMode.MAC_MASTER_WITH_SHARED_DRIVE || 
                                  mode == com.datasync.ytdownloader.config.SetupMode.WINDOWS_MASTER_WITH_SHARED_DRIVE;
@@ -82,11 +87,8 @@ public class MasterImportWatcherService {
                 // 1. Copy to Apple Music import folder
                 File targetAppleFile = new File(appleDir, file.getName());
                 targetAppleFile = getUniqueFile(targetAppleFile);
-                Files.copy(file.toPath(), targetAppleFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-
-                // 2. Verify copied file exists and size > 0
-                if (!targetAppleFile.exists() || targetAppleFile.length() == 0) {
-                    throw new Exception("File copy to Apple Music failed or size is 0");
+                if (!musicImportService.copyAndVerify(file, targetAppleFile)) {
+                    throw new Exception("File copy to Apple Music failed verification");
                 }
 
                 log.info("Successfully copied {} to Apple Music import folder.", file.getName());

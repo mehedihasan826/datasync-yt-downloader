@@ -25,6 +25,11 @@ public class StartupValidator {
     public void validate() {
         log.info("Validating startup dependencies and configuration...");
 
+        if (!properties.isSetupCompleted()) {
+            log.info("Setup has not been completed. Skipping folder structure validation.");
+            return;
+        }
+
         SetupMode mode = properties.getResolvedSetupMode();
         log.info("Resolved Setup Mode: {}", mode);
 

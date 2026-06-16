@@ -51,8 +51,9 @@ public class MusicImportService {
 
             if (job != null) job.setPhase(DownloadJobStatus.IMPORTING_TO_APPLE_MUSIC);
             File finalFile = getUniqueFile(targetDir, originalName);
-            log.info("Local mode: Copying file directly to {}", finalFile.getAbsolutePath());
-            Files.copy(sourceFile.toPath(), finalFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            if (!copyAndVerify(sourceFile, finalFile)) {
+                throw new Exception("File copy/verification failed to Apple Music import folder");
+            }
             
             if (job != null) {
                 job.incrementDownloadedFileCount();
@@ -92,11 +93,8 @@ public class MusicImportService {
                     if (job != null) job.setPhase(DownloadJobStatus.IMPORTING_TO_APPLE_MUSIC);
                     
                     File targetAppleFile = getUniqueFile(appleDir, originalName);
-                    log.info("Master machine: Copying to Apple Music import dir {}", targetAppleFile.getAbsolutePath());
-                    Files.copy(targetReadyFile.toPath(), targetAppleFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-
-                    if (!targetAppleFile.exists() || targetAppleFile.length() == 0) {
-                        throw new Exception("File copy to Apple Music failed or size is 0");
+                    if (!copyAndVerify(targetReadyFile, targetAppleFile)) {
+                        throw new Exception("File copy to Apple Music failed verification");
                     }
 
                     File importedDir = new File(properties.getSharedImportedDir());
@@ -127,5 +125,42 @@ public class MusicImportService {
             counter++;
         }
         return targetFile;
+    }
+
+    public boolean copyAndVerify(File sourceFile, File targetFile) {
+        try {
+            log.info("Copying file to: {}", targetFile.getAbsolutePath());
+            Files.copy(sourceFile.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            
+            // Wait up to 2.0 seconds, polling every 100ms
+            String os = System.getProperty("os.name").toLowerCase();
+            boolean isMac = os.contains("mac");
+            boolean hadPositiveVerification = false;
+
+            for (int i = 0; i < 20; i++) {
+                Thread.sleep(100);
+                if (targetFile.exists() && targetFile.length() > 0) {
+                    hadPositiveVerification = true;
+                    break;
+                }
+            }
+
+            if (hadPositiveVerification) {
+                log.info("Verification succeeded: Target file exists and has size > 0");
+                return true;
+            }
+
+            // If it disappeared on macOS after the copy returned, treat it as successful Apple Music consumption.
+            if (isMac) {
+                log.info("Verification note: File disappeared on macOS, assuming Apple Music consumed it successfully.");
+                return true;
+            }
+
+            log.error("Verification failed: Target file does not exist or size is 0 after 2 seconds.");
+            return false;
+        } catch (Exception e) {
+            log.error("Error copying/verifying file: " + targetFile.getName(), e);
+            return false;
+        }
     }
 }

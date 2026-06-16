@@ -33,33 +33,39 @@ This application provides a local web UI, a browser extension, and an optional T
 
 ## ⚙️ Installation & Setup
 
-### 🎛️ Choose Your Setup Mode
+### 📦 Standalone Graphical Installers (Recommended)
 
-This application adapts to your specific hardware and cloud storage preferences. When running the setup script, you will be prompted to choose a **Setup Mode**:
+DataSync YT Downloader can be installed as a standalone desktop application. No manual Java or dependencies setup is required.
 
-1. **`MAC_MASTER_WITH_SHARED_DRIVE`** *(Recommended for Mac + Windows)*
-   - **Use Case:** You have a Mac as your primary Apple Music library, but also want to queue downloads from a Windows PC.
-   - **Behavior:** Requires Google Drive. The Mac monitors Google Drive, imports songs directly into Apple Music, and syncs your iPhone. Windows acts as a secondary downloader.
+#### 🍏 macOS Setup
+1. Download **`DataSync-YT-Downloader.dmg`** from the [Releases](https://github.com/mehedihasan826/datasync-yt-downloader/releases) page.
+2. Double-click the `.dmg` and drag **DataSync YT Downloader.app** to your **Applications** folder.
+3. Launch the app from your Applications.
 
-2. **`SECONDARY_DOWNLOADER`** *(Recommended for Windows secondary)*
-   - **Use Case:** A Windows PC (or second Mac) that only downloads songs to Google Drive for the Master Mac to import.
-   - **Behavior:** Requires Google Drive. Does NOT import into local Apple Music.
-
-3. **`SIMPLE_LOCAL_MAC`**
-   - **Use Case:** You only have one Mac and don't want to use Google Drive.
-   - **Behavior:** No Google Drive needed. Downloads go straight into your Mac's Apple Music library.
-
-4. **`SIMPLE_LOCAL_WINDOWS`**
-   - **Use Case:** You only have one Windows PC and don't want to use Google Drive.
-   - **Behavior:** No Google Drive needed. Downloads go straight into your Windows Apple Music library. *(Note: You may need to manually drag the folder into Apple Music on Windows if auto-import is unreliable).*
-
-5. **`MULTI_MAC_SHARED_DRIVE` / `WINDOWS_MASTER_WITH_SHARED_DRIVE`**
-   - Alternative advanced setups for multiple Macs or using Windows as the primary Apple Music library.
-
-6. **`CUSTOM`**
-   - Provide your exact paths in the `.env` manually.
+#### 🪟 Windows Setup
+1. Download **`DataSyncYTDownloaderSetup.exe`** from the [Releases](https://github.com/mehedihasan826/datasync-yt-downloader/releases) page.
+2. Double-click the `.exe` to run the installer and follow the prompt options.
+3. Launch the app from your Start Menu.
 
 ---
+
+### 🧙 Onboarding Setup Wizard
+
+On first launch, the app starts a local background server (port `8765`) and automatically opens your default web browser to the **Onboarding Setup Wizard** at:
+`http://localhost:8765/setup`
+
+The step-by-step wizard will guide you to:
+1. **Choose Setup Mode**: Select your role (Simple Local Mac, Simple Local Windows, Mac/Win Master with Shared Google Drive, Secondary Downloader, or Custom).
+2. **Auto-Detect Folders**: The app automatically locates your Apple Music Automatically Add folder, Google Drive root, and workspace directories, and validates them.
+3. **Configure Telegram Bot (Optional)**: Provide your Bot Token and Allowed User IDs, and test the connection securely in-app.
+4. **Setup Browser Extension**: Explains how to load the unpacked extension in developer mode, copies the extension path, and tests connection.
+5. **Autostart Preference**: Option to start the app automatically when you log in (configured as a LaunchAgent on macOS, and Startup shortcut on Windows).
+
+*Note: You can rerun the wizard or modify your settings at any time by navigating to `⚙ Settings` in the top right of the dashboard (`http://localhost:8765/settings`).*
+
+---
+
+### 💻 Developer Setup (Running from Source)
 
 ### 1️⃣ Prerequisites (Both Machines)
 1. Install **[Google Drive Desktop](https://www.google.com/drive/download/)** and sign in. Ensure it's running and your "My Drive" or shared drive is accessible.

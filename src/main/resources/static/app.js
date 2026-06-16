@@ -9,6 +9,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const API_BASE = 'http://localhost:8765/api';
 
+    // i18n Translation Support
+    async function loadTranslations(lang) {
+        try {
+            const res = await fetch(`/api/setup/translations?lang=${lang}`);
+            if (!res.ok) throw new Error("Failed to load translations");
+            const trans = await res.json();
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (trans[key]) {
+                    el.innerHTML = trans[key];
+                }
+            });
+        } catch (e) {
+            console.error("Translation error:", e);
+        }
+    }
+    const savedLang = localStorage.getItem('lang') || 'en-US';
+    loadTranslations(savedLang);
+
     function showError(msg) {
         errorMsg.textContent = msg;
         errorMsg.classList.remove('hidden');
@@ -188,6 +207,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`${API_BASE}/health`);
             if (!response.ok) return;
             const health = await response.json();
+            
+            if (health.setupCompleted === false) {
+                window.location.href = '/setup';
+                return;
+            }
             
             document.getElementById('system-status').classList.remove('hidden');
             document.getElementById('file-stats').classList.remove('hidden');

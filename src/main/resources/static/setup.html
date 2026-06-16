@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="setup.title">DataSync YT Downloader Setup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .wizard-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2.5rem;
+            position: relative;
+            background: rgba(15, 23, 42, 0.4);
+            padding: 1rem;
+            border-radius: 16px;
+            border: 1px solid var(--card-border);
+        }
+        .step-indicator {
+            flex: 1;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            position: relative;
+            z-index: 2;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        .step-indicator.active {
+            color: var(--accent);
+        }
+        .step-indicator.completed {
+            color: var(--success);
+        }
+        .wizard-page {
+            display: none;
+            animation: fadeIn 0.4s ease-in-out forwards;
+        }
+        .wizard-page.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .mode-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .mode-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 2px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .mode-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-3px);
+            background: rgba(30, 41, 59, 0.7);
+        }
+        .mode-card.selected {
+            border-color: var(--accent-secondary);
+            background: rgba(139, 92, 246, 0.15);
+            box-shadow: 0 0 0 1px var(--accent-secondary);
+        }
+        .mode-card h3 {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+        .mode-card p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+        .wizard-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 3rem;
+            gap: 1rem;
+            border-top: 1px solid var(--card-border);
+            padding-top: 2rem;
+        }
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .field-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .field-row {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        .validation-badge {
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            text-transform: uppercase;
+        }
+        .valid {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+        }
+        .invalid {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+        .privacy-box {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1rem;
+            margin-bottom: 2rem;
+            cursor: pointer;
+        }
+        .checkbox-row input {
+            width: 1.25rem;
+            height: 1.25rem;
+            cursor: pointer;
+        }
+        .lang-select-container {
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+        select.lang-select {
+            padding: 0.5rem 1rem;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            border-radius: 8px;
+            outline: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .prereq-box {
+            background: rgba(245, 158, 11, 0.15);
+            border-left: 4px solid var(--warning);
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+        }
+        .info-step {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            padding: 1.25rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+        .status-success-banner {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid var(--success);
+            padding: 1rem;
+            border-radius: 12px;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #6ee7b7;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="glass-container main-card">
+        <div class="lang-select-container">
+            <select id="lang-select" class="lang-select">
+                <option value="en-US">English (US)</option>
+                <option value="ja-JP">日本語</option>
+                <option value="bn-BD">বাংলা</option>
+            </select>
+        </div>
+
+        <h1 data-i18n="setup.title">DataSync YT Downloader Setup</h1>
+        <p class="subtitle" id="setup-subtitle">Follow the steps to configure your local downloading workspace.</p>
+
+        <!-- Progress Steps -->
+        <div class="wizard-steps">
+            <div class="step-indicator active" data-step="1">Welcome</div>
+            <div class="step-indicator" data-step="2">Mode</div>
+            <div class="step-indicator" data-step="3">Folders</div>
+            <div class="step-indicator" data-step="4">Telegram</div>
+            <div class="step-indicator" data-step="5">Extension</div>
+            <div class="step-indicator" data-step="6">Autostart</div>
+            <div class="step-indicator" data-step="7">Finish</div>
+        </div>
+
+        <!-- Wizard Pages -->
+        <form id="setup-form" onsubmit="return false;">
+
+            <!-- PAGE 1: WELCOME -->
+            <div class="wizard-page active" data-page="1">
+                <h2 data-i18n="setup.welcome.title">Welcome to DataSync YT Downloader</h2>
+                <p style="margin-bottom: 1.5rem;" data-i18n="setup.welcome.desc">DataSync YT Downloader downloads YouTube audio locally using yt-dlp and syncs it with your music library or shared cloud folders.</p>
+                
+                <div class="privacy-box">
+                    <p data-i18n="setup.welcome.privacy_summary"><strong>Privacy Notice:</strong> This application runs entirely locally. It does not use databases, cloud auth, or external control servers. All downloads are processed directly on this computer. YouTube links are processed by yt-dlp. Google Drive sync is handled by Google Drive Desktop.</p>
+                    <p style="margin-top: 0.5rem;"><a href="/docs/PRIVACY.md" target="_blank" style="color: var(--accent);">Read Full Privacy Policy</a> | <a href="/docs/SECURITY.md" target="_blank" style="color: var(--accent);">Read Security Details</a></p>
+                </div>
+
+                <label class="checkbox-row">
+                    <input type="checkbox" id="accept-privacy" required>
+                    <span data-i18n="setup.welcome.accept_privacy">I read and accept the Privacy Policy and local usage terms.</span>
+                </label>
+
+                <div id="migration-box" class="info-step hidden">
+                    <p data-i18n="setup.welcome.existing_config" style="font-weight: 600; margin-bottom: 0.75rem;">An existing configuration file was detected. Do you want to import its settings?</p>
+                    <button type="button" id="btn-import-config" class="btn secondary" style="flex: none; padding: 0.75rem 1.5rem; font-size: 0.95rem;" data-i18n="setup.welcome.import_btn">Import Existing Settings</button>
+                </div>
+            </div>
+
+            <!-- PAGE 2: SETUP MODE -->
+            <div class="wizard-page" data-page="2">
+                <h2 data-i18n="setup.mode.title">Choose Setup Mode</h2>
+                <p class="subtitle" data-i18n="setup.mode.desc" style="margin-bottom: 1.5rem;">Select the role for this computer. Choose simple local if you do not use Google Drive.</p>
+                
+                <div class="mode-cards">
+                    <div class="mode-card" data-mode="SIMPLE_LOCAL_MAC">
+                        <h3 data-i18n="setup.mode.local_mac.title">Simple Local Mac</h3>
+                        <p data-i18n="setup.mode.local_mac.desc">One Mac only. No Google Drive required. Downloads go directly to Apple Music.</p>
+                    </div>
+                    <div class="mode-card" data-mode="SIMPLE_LOCAL_WINDOWS">
+                        <h3 data-i18n="setup.mode.local_win.title">Simple Local Windows</h3>
+                        <p data-i18n="setup.mode.local_win.desc">One Windows PC only. No Google Drive required. Downloads go to Windows Apple Music directory.</p>
+                    </div>
+                    <div class="mode-card" data-mode="MAC_MASTER_WITH_SHARED_DRIVE">
+                        <h3 data-i18n="setup.mode.master_mac.title">Mac Master + Google Drive Sync</h3>
+                        <p data-i18n="setup.mode.master_mac.desc">Mac imports to Apple Music. Other secondary machines download to shared Ready folder. Mac imports them.</p>
+                    </div>
+                    <div class="mode-card" data-mode="WINDOWS_MASTER_WITH_SHARED_DRIVE">
+                        <h3 data-i18n="setup.mode.master_win.title">Windows Master + Google Drive Sync</h3>
+                        <p data-i18n="setup.mode.master_win.desc">Windows PC imports to Apple Music. Other secondary machines download to shared Ready folder.</p>
+                    </div>
+                    <div class="mode-card" data-mode="SECONDARY_DOWNLOADER">
+                        <h3 data-i18n="setup.mode.secondary.title">Secondary Downloader</h3>
+                        <p data-i18n="setup.mode.secondary.desc">Downloads to shared Google Drive Ready folder. Master machine imports later.</p>
+                    </div>
+                    <div class="mode-card" data-mode="CUSTOM">
+                        <h3 data-i18n="setup.mode.custom.title">Custom Configuration</h3>
+                        <p data-i18n="setup.mode.custom.desc">Advanced manually configured paths.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAGE 3: FOLDER DETECTION -->
+            <div class="wizard-page" data-page="3">
+                <h2 data-i18n="setup.folders.title">Folder Settings</h2>
+                <p class="subtitle" data-i18n="setup.folders.desc" style="margin-bottom: 1rem;">Validate and configure directory paths for downloads and imports.</p>
+
+                <div id="gdrive-warning" class="prereq-box hidden">
+                    <strong data-i18n="setup.folders.gdrive_missing">This setup mode requires Google Drive Desktop. Please install or sign in to Google Drive Desktop, or choose a Simple Local mode.</strong>
+                </div>
+
+                <div id="apple-music-win-warning" class="prereq-box hidden">
+                    <strong data-i18n="setup.folders.apple_music_win_prereq">Please install Apple Music and Apple Devices from Microsoft Store first.</strong>
+                    <ul style="margin-top: 0.5rem; padding-left: 1.25rem; font-size: 0.85rem;">
+                        <li>1. Install Apple Music app from Microsoft Store</li>
+                        <li>2. Install Apple Devices app from Microsoft Store</li>
+                        <li>3. Open Apple Music once to create your library folder</li>
+                        <li>4. Verify your local library folder exists</li>
+                    </ul>
+                </div>
+
+                <div id="apple-music-mac-warning" class="prereq-box hidden">
+                    <strong data-i18n="setup.folders.apple_music_mac_missing">Apple Music Automatically Add folder not detected. Please open Apple Music once and retry detection.</strong>
+                </div>
+
+                <div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; color: var(--accent);">
+                    <span data-i18n="setup.folders.os_detected">OS Detected:</span> <span id="lbl-os-name">-</span>
+                </div>
+
+                <div class="field-group">
+                    <label for="workDir" data-i18n="setup.folders.work_dir">Work Directory:</label>
+                    <div class="field-row">
+                        <input type="text" id="workDir" required>
+                        <span id="badge-workDir" class="validation-badge invalid">Invalid</span>
+                    </div>
+                </div>
+
+                <div class="field-group" id="group-googleDriveRoot">
+                    <label for="googleDriveRoot" data-i18n="setup.folders.gdrive_root">Google Drive Root:</label>
+                    <div class="field-row">
+                        <input type="text" id="googleDriveRoot">
+                        <span id="badge-googleDriveRoot" class="validation-badge invalid">Invalid</span>
+                    </div>
+                </div>
+
+                <div class="field-group" id="group-sharedReadyDir">
+                    <label for="sharedReadyDir" data-i18n="setup.folders.ready_dir">Ready Directory (Shared):</label>
+                    <div class="field-row">
+                        <input type="text" id="sharedReadyDir">
+                        <span id="badge-sharedReadyDir" class="validation-badge invalid">Invalid</span>
+                    </div>
+                </div>
+
+                <div class="field-group" id="group-sharedImportedDir">
+                    <label for="sharedImportedDir" data-i18n="setup.folders.imported_dir">Imported Directory (Shared):</label>
+                    <div class="field-row">
+                        <input type="text" id="sharedImportedDir">
+                        <span id="badge-sharedImportedDir" class="validation-badge invalid">Invalid</span>
+                    </div>
+                </div>
+
+                <div class="field-group" id="group-sharedFailedDir">
+                    <label for="sharedFailedDir" data-i18n="setup.folders.failed_dir">Failed Directory (Shared):</label>
+                    <div class="field-row">
+                        <input type="text" id="sharedFailedDir">
+                        <span id="badge-sharedFailedDir" class="validation-badge invalid">Invalid</span>
+                    </div>
+                </div>
+
+                <div class="field-group" id="group-appleMusicImportDir">
+                    <label for="appleMusicImportDir" data-i18n="setup.folders.apple_music_dir">Apple Music Automatically Add Folder:</label>
+                    <div class="field-row">
+                        <input type="text" id="appleMusicImportDir">
+                        <span id="badge-appleMusicImportDir" class="validation-badge invalid">Invalid</span>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label for="ytDlpArchiveFile" data-i18n="setup.folders.archive_file">Archive File (Duplicate Prevention):</label>
+                    <div class="field-row">
+                        <input type="text" id="ytDlpArchiveFile" required>
+                        <span id="badge-ytDlpArchiveFile" class="validation-badge invalid">Invalid</span>
+                    </div>
+                </div>
+
+                <button type="button" id="btn-redetect" class="btn outline" style="margin-top: 1rem;" data-i18n="setup.folders.detect_btn">Re-run Folder Detection</button>
+            </div>
+
+            <!-- PAGE 4: TELEGRAM SETUP -->
+            <div class="wizard-page" data-page="4">
+                <h2 data-i18n="setup.telegram.title">Telegram Bot (Optional)</h2>
+                <p class="subtitle" data-i18n="setup.telegram.desc" style="margin-bottom: 1.5rem;">Configure a Telegram bot to queue downloads remotely. The bot runs locally inside this app.</p>
+
+                <label class="checkbox-row">
+                    <input type="checkbox" id="telegramEnabled">
+                    <span data-i18n="setup.telegram.enable">Enable Telegram Bot</span>
+                </label>
+
+                <div id="telegram-fields" class="hidden">
+                    <div class="field-group">
+                        <label for="telegramBotToken" data-i18n="setup.telegram.token">Bot Token:</label>
+                        <input type="text" id="telegramBotToken" placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ">
+                    </div>
+
+                    <div class="field-group">
+                        <label for="telegramBotUsername" data-i18n="setup.telegram.username">Bot Username:</label>
+                        <input type="text" id="telegramBotUsername" placeholder="MyDataSyncBot">
+                    </div>
+
+                    <div class="field-group">
+                        <label for="telegramAllowedUserIds" data-i18n="setup.telegram.allowed_ids">Allowed Telegram User IDs (comma-separated):</label>
+                        <input type="text" id="telegramAllowedUserIds" placeholder="987654321,123456789">
+                    </div>
+
+                    <div class="info-step" style="white-space: pre-line;" data-i18n="setup.telegram.steps">
+                        1. Open Telegram.
+                        2. Search @BotFather.
+                        3. Send /newbot and follow instructions.
+                        4. Copy the bot token and paste it here.
+                        5. Search @userinfobot to get your User ID.
+                    </div>
+
+                    <div class="actions">
+                        <button type="button" id="btn-test-telegram" class="btn secondary" data-i18n="setup.telegram.test_btn">Test Telegram Bot</button>
+                    </div>
+                    <div id="telegram-test-result" class="hidden" style="margin-top: 1rem; padding: 1rem; border-radius: 8px;"></div>
+                </div>
+            </div>
+
+            <!-- PAGE 5: BROWSER EXTENSION -->
+            <div class="wizard-page" data-page="5">
+                <h2 data-i18n="setup.extension.title">Browser Extension Setup</h2>
+                <p class="subtitle" data-i18n="setup.extension.desc" style="margin-bottom: 1.5rem;">The browser extension adds an inline download button to YouTube.</p>
+
+                <div class="info-step" style="white-space: pre-line;" data-i18n="setup.extension.instructions">
+                    To install the extension:
+                    1. Open your browser extensions settings (chrome://extensions or edge://extensions).
+                    2. Enable "Developer Mode" (top-right).
+                    3. Click "Load unpacked".
+                    4. Select the browser-extension directory in this project's folder.
+                </div>
+
+                <div class="field-group">
+                    <label data-i18n="setup.extension.path_label">Extension Folder Path:</label>
+                    <div class="field-row">
+                        <input type="text" id="extension-path" readonly>
+                        <button type="button" id="btn-copy-ext" class="btn outline" style="flex: none; padding: 0.75rem 1.25rem;" data-i18n="setup.extension.copy_path">Copy Path</button>
+                    </div>
+                </div>
+
+                <div class="actions" style="margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap;">
+                    <button type="button" id="btn-open-chrome" class="btn outline" style="font-size: 0.95rem;" data-i18n="setup.extension.open_chrome">Open Chrome Extensions page</button>
+                    <button type="button" id="btn-open-edge" class="btn outline" style="font-size: 0.95rem;" data-i18n="setup.extension.open_edge">Open Edge Extensions page</button>
+                </div>
+
+                <div class="field-group" style="border-top: 1px solid var(--card-border); padding-top: 1.5rem;">
+                    <label data-i18n="setup.extension.test_btn">Test Extension Connection</label>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;" data-i18n="setup.extension.test_prompt">Open the extension popup in your browser toolbar, then click Test.</p>
+                    <button type="button" id="btn-test-extension" class="btn secondary" style="width: fit-content; flex: none; padding: 0.75rem 1.5rem;" data-i18n="setup.extension.test_btn">Test Extension Connection</button>
+                    <div id="extension-test-result" class="hidden" style="margin-top: 1rem; padding: 1rem; border-radius: 8px;"></div>
+                </div>
+            </div>
+
+            <!-- PAGE 6: AUTO-START -->
+            <div class="wizard-page" data-page="6">
+                <h2 data-i18n="setup.autostart.title">Auto-Start Preferences</h2>
+                <p class="subtitle" data-i18n="setup.autostart.desc" style="margin-bottom: 1.5rem;">Configure if the application starts automatically when you log in.</p>
+
+                <label class="checkbox-row">
+                    <input type="checkbox" id="autoStartEnabled">
+                    <span data-i18n="setup.autostart.enable">Start DataSync automatically when I log in</span>
+                </label>
+
+                <label class="checkbox-row">
+                    <input type="checkbox" id="runInBackground">
+                    <span data-i18n="setup.autostart.minimized">Start minimized in the background</span>
+                </label>
+
+                <label class="checkbox-row">
+                    <input type="checkbox" id="openBrowserOnStartup">
+                    <span data-i18n="setup.autostart.open_browser">Open local web UI on startup</span>
+                </label>
+            </div>
+
+            <!-- PAGE 7: FINISH -->
+            <div class="wizard-page" data-page="7">
+                <h2 data-i18n="setup.finish.title">Setup Complete</h2>
+                <p class="subtitle" data-i18n="setup.finish.desc" style="margin-bottom: 1.5rem;">Your configuration has been prepared.</p>
+
+                <div class="info-step">
+                    <h3 data-i18n="setup.finish.summary" style="margin-bottom: 0.5rem; font-size: 1.1rem; color: var(--text-primary);">Summary:</h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem;">
+                        <div><span data-i18n="setup.finish.role">Role:</span> <span id="summary-mode" style="font-weight: 600; color: var(--accent-color);">-</span></div>
+                        <div><span data-i18n="setup.finish.gdrive">Google Drive:</span> <span id="summary-gdrive">-</span></div>
+                        <div><span data-i18n="setup.finish.apple_music">Apple Music Import:</span> <span id="summary-apple">-</span></div>
+                        <div><span data-i18n="setup.finish.telegram">Telegram Bot:</span> <span id="summary-telegram">-</span></div>
+                        <div><span data-i18n="setup.finish.autostart">Auto-Start:</span> <span id="summary-autostart">-</span></div>
+                    </div>
+                </div>
+
+                <div id="active-jobs-alert" class="error-msg hidden" data-i18n="settings.active_jobs_error">Cannot modify configuration while downloads are running. Please wait for downloads to complete.</div>
+                
+                <button type="button" id="btn-finish" class="btn primary" style="margin-top: 1.5rem; width: 100%;" data-i18n="setup.finish.btn">Save & Open Dashboard</button>
+            </div>
+
+            <!-- Wizard Navigation -->
+            <div class="wizard-actions">
+                <button type="button" id="btn-back" class="btn outline hidden" data-i18n="setup.btn.back">Back</button>
+                <button type="button" id="btn-next" class="btn primary" data-i18n="setup.btn.next">Next</button>
+            </div>
+
+        </form>
+    </div>
+
+    <script src="setup.js"></script>
+</body>
+</html>

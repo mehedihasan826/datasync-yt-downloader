@@ -20,7 +20,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   
   if (request.type === 'DATASYNC_HEALTH') {
-    fetch("http://localhost:8765/api/health")
+    fetch("http://localhost:8765/api/health?source=extension")
     .then(res => {
       if (!res.ok) throw new Error("Backend returned " + res.status);
       return res.json();

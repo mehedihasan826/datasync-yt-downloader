@@ -1,0 +1,14 @@
+DataSync YT Downloader
+Copyright (c) 2026 DataSync Team
+
+This product includes software developed by third parties:
+
+1. yt-dlp (https://github.com/yt-dlp/yt-dlp)
+   License: Unlicense / Public Domain
+   yt-dlp is used locally to extract video/audio information and download media streams.
+
+2. FFmpeg (https://www.ffmpeg.org/)
+   License: LGPLv2.1 / GPLv3.0 depending on compilation options
+   FFmpeg is used locally to convert downloaded audio streams to m4a format and embed metadata.
+
+This product runs entirely locally on the user's system and does not compile or distribute these binaries directly. Users are encouraged to install their own version of yt-dlp and FFmpeg, or reference the local paths in the configuration.

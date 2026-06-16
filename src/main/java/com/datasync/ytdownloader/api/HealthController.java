@@ -17,13 +17,19 @@ public class HealthController {
     private final AppProperties properties;
     private final CommandRunner commandRunner;
 
+    private volatile boolean extensionContacted = false;
+
     public HealthController(AppProperties properties, CommandRunner commandRunner) {
         this.properties = properties;
         this.commandRunner = commandRunner;
     }
 
     @GetMapping
-    public Map<String, Object> health() {
+    public Map<String, Object> health(@org.springframework.web.bind.annotation.RequestParam(value = "source", required = false) String source) {
+        if ("extension".equalsIgnoreCase(source)) {
+            extensionContacted = true;
+        }
+
         Map<String, Object> response = new HashMap<>();
         response.put("status", "ok");
         
@@ -78,6 +84,13 @@ public class HealthController {
         response.put("telegramPollingEnabled", properties.isTelegramPollingEnabled());
         response.put("telegramConfigured", properties.getTelegramBotToken() != null && !properties.getTelegramBotToken().isBlank());
         response.put("telegramAllowedUsersConfigured", properties.getTelegramAllowedUserIds() != null && !properties.getTelegramAllowedUserIds().isBlank());
+
+        // Installer/config fields
+        response.put("setupCompleted", properties.isSetupCompleted());
+        response.put("configPath", System.getProperty("ACTIVE_ENV_PATH", ".env"));
+        response.put("autoStartEnabled", properties.isAutoStartEnabled());
+        response.put("installedApp", com.datasync.ytdownloader.service.AutostartService.getLauncherPath() != null);
+        response.put("browserExtensionInstalled", extensionContacted);
 
         return response;
     }

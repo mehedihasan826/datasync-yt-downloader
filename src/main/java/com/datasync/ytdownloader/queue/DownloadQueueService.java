@@ -22,15 +22,17 @@ public class DownloadQueueService {
 
     private final YtDlpService ytDlpService;
     private final MusicImportService musicImportService;
+    private final com.datasync.ytdownloader.config.AppProperties properties;
 
     private final Map<String, DownloadJob> jobs = new ConcurrentHashMap<>();
     private final ExecutorService executor = Executors.newFixedThreadPool(2); // Process 2 jobs at a time
     
     private final List<JobProgressListener> listeners = new java.util.concurrent.CopyOnWriteArrayList<>();
 
-    public DownloadQueueService(YtDlpService ytDlpService, MusicImportService musicImportService) {
+    public DownloadQueueService(YtDlpService ytDlpService, MusicImportService musicImportService, com.datasync.ytdownloader.config.AppProperties properties) {
         this.ytDlpService = ytDlpService;
         this.musicImportService = musicImportService;
+        this.properties = properties;
     }
     
     public void addListener(JobProgressListener listener) {
@@ -129,7 +131,27 @@ public class DownloadQueueService {
             }
 
             if (successCount > 0) {
-                updateStatus(job, DownloadJobStatus.COMPLETED, "Completed " + successCount + " tracks.");
+                com.datasync.ytdownloader.config.SetupMode mode = properties.getResolvedSetupMode();
+                boolean isMac = System.getProperty("os.name").toLowerCase().contains("mac");
+                boolean isAppleMusicImportMode = mode == com.datasync.ytdownloader.config.SetupMode.SIMPLE_LOCAL_MAC ||
+                                                 mode == com.datasync.ytdownloader.config.SetupMode.SIMPLE_LOCAL_WINDOWS ||
+                                                 mode == com.datasync.ytdownloader.config.SetupMode.MAC_MASTER_WITH_SHARED_DRIVE ||
+                                                 mode == com.datasync.ytdownloader.config.SetupMode.WINDOWS_MASTER_WITH_SHARED_DRIVE ||
+                                                 mode == com.datasync.ytdownloader.config.SetupMode.MULTI_MAC_SHARED_DRIVE;
+
+                String successMsg;
+                if (isAppleMusicImportMode) {
+                    if (isMac) {
+                        successMsg = "Completed " + successCount + " tracks. Apple Music import completed (iPhone sync depends on Finder).";
+                    } else {
+                        successMsg = "Completed " + successCount + " tracks. Copied to Apple Music import folder; please verify in Apple Music (iPhone sync depends on Apple Devices).";
+                    }
+                } else if (mode == com.datasync.ytdownloader.config.SetupMode.SECONDARY_DOWNLOADER) {
+                    successMsg = "Completed " + successCount + " tracks. Saved to Google Drive Ready folder.";
+                } else {
+                    successMsg = "Completed " + successCount + " tracks.";
+                }
+                updateStatus(job, DownloadJobStatus.COMPLETED, successMsg);
             } else {
                 updateStatus(job, DownloadJobStatus.FAILED, "Tracks downloaded but failed to import.");
             }
@@ -137,5 +159,14 @@ public class DownloadQueueService {
             log.error("Job {} failed", job.getId(), e);
             updateStatus(job, DownloadJobStatus.FAILED, "Error: " + e.getMessage());
         }
+    }
+
+    public boolean hasActiveJobs() {
+        return jobs.values().stream().anyMatch(j -> 
+            j.getStatus() == DownloadJobStatus.QUEUED ||
+            j.getStatus() == DownloadJobStatus.DOWNLOADING ||
+            j.getStatus() == DownloadJobStatus.EXTRACTING ||
+            j.getStatus() == DownloadJobStatus.POST_PROCESSING
+        );
     }
 }
