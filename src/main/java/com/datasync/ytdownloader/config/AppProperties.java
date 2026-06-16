@@ -23,6 +23,9 @@ public class AppProperties {
     private int cleanupRetentionDays = 30;
     private String cleanupMode = "manual";
     
+    private boolean autoCleanImportedAfterMasterImport = true;
+    private int keepImportedBackupDays = 0;
+    
     private boolean telegramEnabled = false;
     private String telegramBotToken;
     private String telegramBotUsername;
@@ -80,6 +83,12 @@ public class AppProperties {
 
     public String getCleanupMode() { return cleanupMode; }
     public void setCleanupMode(String cleanupMode) { this.cleanupMode = cleanupMode; }
+
+    public boolean isAutoCleanImportedAfterMasterImport() { return autoCleanImportedAfterMasterImport; }
+    public void setAutoCleanImportedAfterMasterImport(boolean autoCleanImportedAfterMasterImport) { this.autoCleanImportedAfterMasterImport = autoCleanImportedAfterMasterImport; }
+
+    public int getKeepImportedBackupDays() { return keepImportedBackupDays; }
+    public void setKeepImportedBackupDays(int keepImportedBackupDays) { this.keepImportedBackupDays = keepImportedBackupDays; }
 
     public boolean isTelegramEnabled() { return telegramEnabled; }
     public void setTelegramEnabled(boolean telegramEnabled) { this.telegramEnabled = telegramEnabled; }

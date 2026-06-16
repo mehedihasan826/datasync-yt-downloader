@@ -5,8 +5,10 @@ Write-Host "Starting DataSync YT Downloader..." -ForegroundColor Cyan
 if (Test-Path .env) {
     Get-Content .env | Where-Object { $_ -match '=' -and $_ -notmatch '^#' } | ForEach-Object {
         $name, $value = $_.Split('=', 2)
-        [Environment]::SetEnvironmentVariable($name.Trim(), $value.Trim())
+        $cleanName = $name.Trim()
+        $cleanValue = $value.Trim().Trim('"', "'")
+        [Environment]::SetEnvironmentVariable($cleanName, $cleanValue)
     }
 }
 
-java -jar target\datasync-yt-downloader-0.0.1-SNAPSHOT.jar
+.\mvnw.cmd spring-boot:run

@@ -26,5 +26,17 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedMethods("GET", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(false);
+                
+        registry.addMapping("/api/archive/status")
+                .allowedOriginPatterns("chrome-extension://*", "http://localhost:8765")
+                .allowedMethods("GET", "OPTIONS")
+                .allowedHeaders("*")
+                .allowCredentials(false);
+                
+        registry.addMapping("/api/cleanup/**")
+                .allowedOriginPatterns("chrome-extension://*", "http://localhost:8765")
+                .allowedMethods("POST", "OPTIONS")
+                .allowedHeaders("*")
+                .allowCredentials(false);
     }
 }

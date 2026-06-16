@@ -234,4 +234,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    const btnCleanupAll = document.getElementById('btn-cleanup-all');
+    if (btnCleanupAll) {
+        btnCleanupAll.addEventListener('click', async () => {
+            if (!confirm("This deletes ONLY Google Drive Imported backup files. It does not delete Apple Music files and does not affect duplicate prevention. Are you sure?")) return;
+            
+            try {
+                btnCleanupAll.disabled = true;
+                const response = await fetch(`${API_BASE}/cleanup/imported/all`, { method: 'POST' });
+                if (!response.ok) throw new Error("Cleanup all failed");
+                const result = await response.json();
+                alert(`${result.message}\n\nDeleted ${result.deletedCount} files.`);
+                fetchHealth();
+            } catch (err) {
+                alert(`Cleanup error: ${err.message}`);
+            } finally {
+                btnCleanupAll.disabled = false;
+            }
+        });
+    }
 });

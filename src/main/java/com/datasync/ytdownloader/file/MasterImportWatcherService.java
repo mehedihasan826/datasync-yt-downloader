@@ -87,12 +87,16 @@ public class MasterImportWatcherService {
 
                 log.info("Successfully copied {} to Apple Music import folder.", file.getName());
 
-                // 3. Move original to Imported folder
-                File targetImportedFile = new File(importedDir, file.getName());
-                targetImportedFile = getUniqueFile(targetImportedFile);
-                Files.move(file.toPath(), targetImportedFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                
-                log.info("Successfully moved {} to Imported folder.", file.getName());
+                // 3. Handle backup/cleanup
+                if (properties.isAutoCleanImportedAfterMasterImport() && properties.getKeepImportedBackupDays() == 0) {
+                    Files.delete(file.toPath());
+                    log.info("Imported to Apple Music and removed shared backup because archive.txt keeps download history: {}", file.getName());
+                } else {
+                    File targetImportedFile = new File(importedDir, file.getName());
+                    targetImportedFile = getUniqueFile(targetImportedFile);
+                    Files.move(file.toPath(), targetImportedFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    log.info("Successfully moved {} to Imported folder.", file.getName());
+                }
 
             } catch (Exception e) {
                 log.error("Failed to import file: {}", file.getName(), e);

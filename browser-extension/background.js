@@ -42,4 +42,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     
     return true;
   }
+  
+  if (request.type === 'DATASYNC_ARCHIVE_STATUS') {
+    fetch("http://localhost:8765/api/archive/status?url=" + encodeURIComponent(request.url))
+    .then(res => {
+      if (!res.ok) throw new Error("Backend returned " + res.status);
+      return res.json();
+    })
+    .then(data => sendResponse({ success: true, data }))
+    .catch(err => sendResponse({ success: false, error: err.message }));
+    
+    return true;
+  }
 });

@@ -14,33 +14,37 @@ function injectButton() {
   if (!url.includes("watch?v=") && !url.includes("/playlist?list=") && !url.includes("music.youtube.com/watch")) return;
 
   let targetArea = null;
+  let isFallback = false;
   if (url.includes("music.youtube.com")) {
     targetArea = document.querySelector('ytmusic-menu-renderer #top-level-buttons') ||
                  document.querySelector('ytmusic-menu-renderer');
   } else {
-    targetArea = document.querySelector('#top-level-buttons-computed') || 
+    targetArea = document.querySelector('#top-level-buttons-computed') ||
                  document.querySelector('#flexible-item-buttons') ||
                  document.querySelector('ytd-menu-renderer #top-level-buttons') ||
-                 document.querySelector('ytd-menu-renderer') ||
                  document.querySelector('#actions-inner') ||
+                 document.querySelector('ytd-menu-renderer') ||
                  document.querySelector('#subscribe-button');
   }
 
-  if (!targetArea) return;
+  if (!targetArea) {
+    targetArea = document.body;
+    isFallback = true;
+  }
 
   const container = document.createElement('div');
   container.id = 'datasync-yt-download-container';
-  container.className = 'datasync-btn-container';
+  container.className = 'datasync-btn-container' + (isFallback ? ' datasync-fallback-floating' : '');
 
   const btnVideo = document.createElement('button');
   btnVideo.id = 'datasync-btn-video';
   btnVideo.className = 'datasync-btn';
-  btnVideo.innerHTML = '⬇ DataSync Video';
+  btnVideo.innerHTML = '⬇ Download';
   
   const btnMix = document.createElement('button');
   btnMix.id = 'datasync-btn-mix';
   btnMix.className = 'datasync-btn';
-  btnMix.innerHTML = 'Mix/Playlist';
+  btnMix.innerHTML = 'Download mix/playlist';
 
   const triggerDownload = (playlist, btn) => {
     btn.innerHTML = '⏳ Queueing...';
@@ -55,14 +59,13 @@ function injectButton() {
         btn.innerHTML = '❌ Failed';
         btn.classList.add('ds-error');
         setTimeout(() => {
-          btn.innerHTML = playlist ? 'Mix/Playlist' : '⬇ DataSync Video';
+          btn.innerHTML = playlist ? 'Download mix/playlist' : '⬇ Download';
           btn.classList.remove('ds-error');
           btn.disabled = false;
         }, 3000);
       } else {
         btn.innerHTML = '✅ Queued';
         btn.classList.add('ds-success');
-        // Let the poller take over after this
         pollJobStatus();
       }
     });
@@ -76,22 +79,36 @@ function injectButton() {
     container.appendChild(btnMix);
   }
 
-  if (targetArea.id === 'subscribe-button') {
-    targetArea.parentNode.insertBefore(container, targetArea.nextSibling);
-  } else {
-    targetArea.prepend(container);
+  try {
+    if (isFallback) {
+      targetArea.appendChild(container);
+    } else if (targetArea.id === 'subscribe-button') {
+      targetArea.parentNode.insertBefore(container, targetArea.nextSibling);
+    } else if (targetArea.firstChild) {
+      targetArea.insertBefore(container, targetArea.firstChild);
+    } else {
+      targetArea.appendChild(container);
+    }
+  } catch (err) {
+    console.warn("DataSync Extension: Failed to inject button into target area, using floating fallback.", err);
+    container.className = 'datasync-btn-container datasync-fallback-floating';
+    document.body.appendChild(container);
   }
 
   pollJobStatus();
 }
 
 function pollJobStatus() {
-  chrome.runtime.sendMessage({ type: 'DATASYNC_GET_JOBS' }, (response) => {
-    if (!response || !response.success || !response.data) return;
-    
-    const currentUrl = window.location.href;
-    const vidMatch = currentUrl.match(/v=([^&]+)/);
-    const listMatch = currentUrl.match(/list=([^&]+)/);
+  if (!chrome.runtime?.id) return; // Stop polling if extension was reloaded
+
+  try {
+    chrome.runtime.sendMessage({ type: 'DATASYNC_GET_JOBS' }, (response) => {
+      if (chrome.runtime.lastError) return; // Catch context invalidated gracefully
+      if (!response || !response.success || !response.data) return;
+      
+      const currentUrl = window.location.href;
+      const vidMatch = currentUrl.match(/v=([^&]+)/);
+      const listMatch = currentUrl.match(/list=([^&]+)/);
 
     const jobs = response.data;
     // Find the most recent job matching the current video or list
@@ -132,8 +149,22 @@ function pollJobStatus() {
         btn.classList.add('ds-error');
         btn.disabled = false;
       }
+    } else {
+      // Check archive if no active job
+      chrome.runtime.sendMessage({ type: 'DATASYNC_ARCHIVE_STATUS', url: currentUrl }, (res) => {
+        if (res && res.success && res.data && res.data.downloaded) {
+          const btnVideo = document.getElementById('datasync-btn-video');
+          if (btnVideo && !btnVideo.disabled && btnVideo.innerHTML !== '✅ Downloaded') {
+            btnVideo.innerHTML = '✅ Downloaded';
+            btnVideo.classList.add('ds-success');
+          }
+        }
+      });
     }
   });
+  } catch (e) {
+    // Gracefully handle context invalidation
+  }
 }
 
 // Poll for both injection and status updates

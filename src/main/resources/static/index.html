@@ -48,8 +48,9 @@
         <div id="error-msg" class="error-msg hidden"></div>
         
         <div class="cleanup-section">
-            <button id="btn-cleanup" class="btn outline">Delete Imported backups older than retention days</button>
-            <p class="warning-text">Warning: Cleanup never deletes Apple Music files.</p>
+            <button id="btn-cleanup" class="btn outline" style="margin-bottom: 8px;">Delete Imported backups older than retention days</button>
+            <button id="btn-cleanup-all" class="btn outline" style="border-color: var(--error); color: var(--error);">Delete all Imported backups now</button>
+            <p class="warning-text">Warning: Cleanup never deletes Apple Music files or archive.txt. It only deletes temporary Google Drive backups.</p>
         </div>
 
         <h2>Recent Jobs</h2>

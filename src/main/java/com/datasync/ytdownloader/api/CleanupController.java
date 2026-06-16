@@ -28,7 +28,9 @@ public class CleanupController {
     public ResponseEntity<Map<String, Object>> cleanupImported() {
         Map<String, Object> response = new HashMap<>();
         String importedDirPath = properties.getSharedImportedDir();
-        int retentionDays = properties.getCleanupRetentionDays();
+        int retentionDays = properties.getKeepImportedBackupDays() > 0 
+            ? properties.getKeepImportedBackupDays() 
+            : properties.getCleanupRetentionDays();
 
         if (importedDirPath == null || importedDirPath.isBlank()) {
             response.put("status", "error");
@@ -80,6 +82,59 @@ public class CleanupController {
         response.put("deletedCount", deletedCount);
         response.put("skippedCount", skippedCount);
         response.put("message", "Deleted old Imported backup files only. Apple Music files and archive.txt were not touched.");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/imported/all")
+    public ResponseEntity<Map<String, Object>> cleanupImportedAll() {
+        Map<String, Object> response = new HashMap<>();
+        String importedDirPath = properties.getSharedImportedDir();
+
+        if (importedDirPath == null || importedDirPath.isBlank()) {
+            response.put("status", "error");
+            response.put("message", "Shared Imported Dir is not configured.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        File importedDir = new File(importedDirPath);
+        if (!importedDir.exists() || !importedDir.isDirectory()) {
+            response.put("status", "error");
+            response.put("message", "Shared Imported Dir does not exist.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        File[] files = importedDir.listFiles((dir, name) -> name.endsWith(".m4a"));
+        if (files == null || files.length == 0) {
+            response.put("status", "ok");
+            response.put("deletedCount", 0);
+            response.put("skippedCount", 0);
+            response.put("message", "Deleted Imported backup files only. Apple Music files and archive.txt were not touched.");
+            return ResponseEntity.ok(response);
+        }
+
+        int deletedCount = 0;
+        int skippedCount = 0;
+
+        for (File file : files) {
+            try {
+                boolean deleted = file.delete();
+                if (deleted) {
+                    deletedCount++;
+                    log.info("Cleaned up imported file: {}", file.getName());
+                } else {
+                    skippedCount++;
+                    log.warn("Failed to delete file: {}", file.getName());
+                }
+            } catch (Exception e) {
+                skippedCount++;
+                log.error("Error deleting file: {}", file.getName(), e);
+            }
+        }
+
+        response.put("status", "ok");
+        response.put("deletedCount", deletedCount);
+        response.put("skippedCount", skippedCount);
+        response.put("message", "Deleted Imported backup files only. Apple Music files and archive.txt were not touched.");
         return ResponseEntity.ok(response);
     }
 }
